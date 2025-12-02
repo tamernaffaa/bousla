@@ -9,13 +9,14 @@ import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
 import { 
   Order, OrderDetails, Payment, Service, Position, 
-  Profile, TrackingData, Last_order, CaptainData, KotlinOrderData
+  Profile, TrackingData, LastOrder, CaptainData, KotlinOrderData, OrderStatusResponse
 } from './types';
 import { createCustomIcon, decodePolyline, extractMunicipality, createCarIcon } from './mapUtils';
 import { 
-  fetchData, fetchOrderById, updateOrderStatus, 
-  update_order_status, 
-  updateServiceStatus, fetchlast_order
+  ordersApi, 
+  servicesApi, 
+  paymentsApi, 
+  captainApi 
 } from './api';
 import { OrderDetailsModal } from './OrderDetailsModal';
 import { BetterLuckMessage } from './BetterLuckMessage';
@@ -95,7 +96,7 @@ export default function CaptainApp() {
   const [active, setActive] = useState(false);
   const [zoneRadius, setZoneRadius] = useState(1);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [lastorder, setlastorder] = useState<Last_order[]>([]);
+  const [lastorder, setLastorder] = useState<LastOrder[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [filterMonth, setFilterMonth] = useState<string | null>(null);
   const [services, setServices] = useState<Service[]>([]);
@@ -180,14 +181,14 @@ export default function CaptainApp() {
       const name = urlParams.get('name');
       const phone = urlParams.get('phone');
       const photo = urlParams.get('photo');
-      const active = urlParams.get('active');
+      const activeParam = urlParams.get('active');
       
       if (id) {
         setCaptainId(Number(id));
       }
 
       // تحويل قيمة active من سلسلة نصية إلى boolean
-      setActive(active === 'true');
+      setActive(activeParam === 'true');
       
       // تحديث البيانات الأساسية
       const updatedProfile = {
@@ -286,12 +287,10 @@ export default function CaptainApp() {
   }, [payments]);
 
   const fetchLastOrders = useCallback(async () => {
-    console.log(captainId)
+    console.log('Fetching last orders for captain:', captainId);
     try {
-      const response = await fetchlast_order<Last_order[]>('get_lastorder', { cap_id: captainId });
-      if (response.success) {
-        setlastorder(response.data || []);
-      }
+      const lastOrders = await ordersApi.getLastOrders(captainId);
+      setLastorder(lastOrders);
     } catch (error) {
       console.error('Error fetching last orders:', error);
     }
@@ -434,10 +433,8 @@ export default function CaptainApp() {
   // Callbacks
   const fetchInitialData = useCallback(async () => {
     try {
-      const servicesRes = await fetchData<Service[]>('cap_ser', { cap_id: captainId });
-      if (servicesRes.success) {
-        setServices(servicesRes.data || []);
-      }
+      const servicesData = await servicesApi.getCaptainServices(captainId);
+      setServices(servicesData);
     } catch (error) {
       console.error('Error fetching initial data:', error);
     }
@@ -446,10 +443,8 @@ export default function CaptainApp() {
   const fetchPayments = useCallback(async () => {
     try {
       setIsRefreshingPayments(true);
-      const response = await fetchData<Payment[]>('get_cap_payment', { cap_id: captainId });
-      if (response.success) {
-        setPayments(response.data || []);
-      }
+      const paymentsData = await paymentsApi.getCaptainPayments(captainId);
+      setPayments(paymentsData);
     } catch (error) {
       console.error('Error fetching payments:', error);
     } finally {
@@ -483,9 +478,12 @@ export default function CaptainApp() {
     const newActiveState = !active;
     setActive(newActiveState);
     
+    // تحديث حالة النشاط في قاعدة البيانات
+    captainApi.updateActivity(captainId, newActiveState);
+    
     // إرسال القيمة إلى Kotlin بناءً على الحالة الجديدة
     sendToKotlin("start_cap_serv", newActiveState ? "1" : "0");
-  }, [active]);
+  }, [active, captainId]);
 
   const clearRoute = useCallback(() => {
     setRoutePoints([]);
@@ -673,7 +671,7 @@ export default function CaptainApp() {
       
       try {
         // جلب تفاصيل الطلب من API
-        const order = await fetchOrderById(orderId);
+        const order = await ordersApi.getById(orderId);
         
         if (order) {
           setSelectedOrder({
@@ -688,21 +686,21 @@ export default function CaptainApp() {
             start_detlis: order.start_detlis,
             end_detlis: order.end_detlis,
             notes: order.notes || 'لا توجد ملاحظات',
-            km_price:order.km_price,
-            min_price:order.min_price,
-            discount:order.discount,
-            add1:order.add1,
-            f_km:order.f_km,
-            start_time:new Date().toISOString() ,
-            status:order.status,
-            real_km:order.real_km,
-            real_min:order.real_min,
-            real_price:order.real_price,
-            real_street:order.real_street,
-            waiting_min:order.waiting_min,
-            end_time:order.end_time,
-            start_point:order.start_point,
-            end_point:order.end_point
+            km_price: order.km_price,
+            min_price: order.min_price,
+            discount: order.discount,
+            add1: order.add1,
+            f_km: order.f_km,
+            start_time: new Date().toISOString(),
+            status: order.status,
+            real_km: order.real_km,
+            real_min: order.real_min,
+            real_price: order.real_price,
+            real_street: order.real_street,
+            waiting_min: order.waiting_min,
+            end_time: order.end_time,
+            start_point: order.start_point,
+            end_point: order.end_point
           });
           
           setShowOrderDetails(true);
@@ -726,7 +724,7 @@ export default function CaptainApp() {
     console.log('Fetching order with ID:', orderId);
     setAcceptOrderStatus('loading');
     
-    const order = await fetchOrderById(orderId);
+    const order = await ordersApi.getById(orderId);
     
     if (!order) {
       console.error('No order data received for ID:', orderId);
@@ -746,21 +744,21 @@ export default function CaptainApp() {
       start_detlis: order.start_detlis,
       end_detlis: order.end_detlis,
       notes: order.notes || 'لا توجد ملاحظات',
-      km_price:order.km_price,
-      min_price:order.min_price,
-      discount:order.discount,
-      add1:order.add1,
-      f_km:order.f_km,
+      km_price: order.km_price,
+      min_price: order.min_price,
+      discount: order.discount,
+      add1: order.add1,
+      f_km: order.f_km,
       start_time: new Date().toISOString(),
-      status:order.status,
-      real_km:order.real_km,
-      real_min:order.real_min,
-      real_price:order.real_price,
-      real_street:order.real_street,
-      waiting_min:order.waiting_min,
-      end_time:order.end_time,
-      start_point:order.start_point,
-      end_point:order.end_point
+      status: order.status,
+      real_km: order.real_km,
+      real_min: order.real_min,
+      real_price: order.real_price,
+      real_street: order.real_street,
+      waiting_min: order.waiting_min,
+      end_time: order.end_time,
+      start_point: order.start_point,
+      end_point: order.end_point
     });
     
     setAcceptOrderStatus('idle');
@@ -772,16 +770,16 @@ export default function CaptainApp() {
   }, [drawRoute]);
 
   ///الموافقة على الطلب
-  const handleAcceptOrder = useCallback(async (status:string) => {
+  const handleAcceptOrder = useCallback(async (status: string) => {
     if (!selectedOrder) return;
 
     setAcceptOrderStatus('loading');
 
     try {
-      const result = await update_order_status(selectedOrder.id, captainId,status);
-      console.log(result)
+      const result = await ordersApi.updateStatus(selectedOrder.id, captainId, status);
+      console.log('Order status update result:', result);
 
-      if (result === 'success') {
+      if (result.status === 'success') {
         setAcceptOrderStatus('success');
         
         // إرسال بيانات الطلب إلى Kotlin
@@ -793,21 +791,21 @@ export default function CaptainApp() {
           duration_min: selectedOrder.duration_min,
           cost: selectedOrder.cost,
           user_rate: selectedOrder.user_rate,
-          km_price:selectedOrder.km_price,
-          min_price:selectedOrder.min_price,
-          discount:selectedOrder.discount,
-          add1:selectedOrder.add1,
-          f_km:selectedOrder.f_km,
-          start_time:selectedOrder.start_time,
-          accept_time:new Date().toISOString(),
-          start_point:selectedOrder.start_point,
-          end_point:selectedOrder.end_point
+          km_price: selectedOrder.km_price,
+          min_price: selectedOrder.min_price,
+          discount: selectedOrder.discount,
+          add1: selectedOrder.add1,
+          f_km: selectedOrder.f_km,
+          start_time: selectedOrder.start_time,
+          accept_time: new Date().toISOString(),
+          start_point: selectedOrder.start_point,
+          end_point: selectedOrder.end_point
         };
         
         sendToKotlin("order_accepted", JSON.stringify(orderData));
 
-        //ايقاف زر استقبال الطلبات
-        setActive(false)
+        // إيقاف زر استقبال الطلبات
+        setActive(false);
         
         setTimeout(() => {
           setShowOrderDetails(false);
@@ -820,7 +818,7 @@ export default function CaptainApp() {
           // بدء تتبع المسار
           sendToKotlin("start_route_tracking", selectedOrder.id.toString());
         }, 2000);
-      } else if (result === 'goodluck') {
+      } else if (result.status === 'goodluck') {
         setAcceptOrderStatus('goodluck');
         setTimeout(() => {
           setShowOrderDetails(false);
@@ -852,7 +850,7 @@ export default function CaptainApp() {
     setAcceptOrderStatus('loading');
 
     try {
-      if (status == "completed") {
+      if (status === "completed") {
         // إيقاف تتبع المسار
         stopRouteTracking();
         sendToKotlin("stop_tracking_services", "0");
@@ -863,22 +861,22 @@ export default function CaptainApp() {
           date_time: new Date().toISOString() 
         }));
 
-        clearRoute()
+        clearRoute();
       }
 
       // إرسال حالة الطلب الجديدة إلى السيرفر مع مهلة زمنية
       const result = await Promise.race([
-        update_order_status(trackingOrder.id, captainId, status),
-        new Promise((resolve) => setTimeout(() => resolve('timeout'), 10000)) // مهلة 10 ثواني
-      ]);
+        ordersApi.updateStatus(trackingOrder.id, captainId, status),
+        new Promise<{ status: string }>((resolve) => setTimeout(() => resolve({ status: 'timeout' }), 10000)) // مهلة 10 ثواني
+      ]) as OrderStatusResponse | { status: string };
 
-      if (result === 'timeout') {
+      if ((result as { status: string }).status === 'timeout') {
         // إذا انتهت المهلة الزمنية
         setAcceptOrderStatus('error');
         throw new Error('فشل في تحديث الحالة. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.');
       }
 
-      if (result === 'success') {
+      if ((result as OrderStatusResponse).status === 'success') {
         // إرسال الطلب لكوتلن
         sendToKotlin("order_status_update", JSON.stringify({
           orderId: trackingOrder.id,
@@ -886,7 +884,7 @@ export default function CaptainApp() {
           date_time: new Date().toISOString() 
         }));
         
-        if (status == "completed") {
+        if (status === "completed") {
           sendToKotlin("delete_order_finish", "0");
         }
         
@@ -972,13 +970,13 @@ export default function CaptainApp() {
       setAcceptOrderStatus('loading');
       
       // إرسال تحديث الحالة للسيرفر
-      const result = await update_order_status(
+      const result = await ordersApi.updateStatus(
         completedOrderData.order.id, 
         captainId, 
         "completed"
       );
 
-      if (result === 'success') {
+      if (result.status === 'success') {
         // إرسال البيانات إلى Kotlin
         sendToKotlin("order_status_update", JSON.stringify({
           orderId: completedOrderData.order.id,
@@ -994,7 +992,7 @@ export default function CaptainApp() {
         setAcceptOrderStatus('success');
         setCompletedOrderData(null);
 
-        clearRoute()
+        clearRoute();
         
         setTimeout(() => {
           setAcceptOrderStatus('idle');
@@ -1178,7 +1176,10 @@ export default function CaptainApp() {
     ));
 
     try {
-      await updateServiceStatus(service.id, newActive, captainId);
+      const success = await servicesApi.updateStatus(service.id, newActive, captainId);
+      if (!success) {
+        throw new Error('Failed to update service status');
+      }
     } catch (error) {
       setServices(prev => prev.map(s => 
         s.id === service.id ? { ...s, active: originalActive } : s
@@ -1199,22 +1200,9 @@ export default function CaptainApp() {
     }
 
     try {
-      const response = await fetch('https://alrasekhooninlaw.com/bousla/app/update_password.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          captain_id: captainId,
-          current_password: currentPassword,
-          new_password: newPassword,
-          confirm_password: confirmPassword
-        }),
-      });
+      const response: { success: boolean; message?: string } = await captainApi.changePassword(captainId, currentPassword, newPassword);
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.success) {
         // إظهار رسالة نجاح
         alert('تم تغيير كلمة المرور بنجاح');
         setShowChangePassword(false);
@@ -1223,7 +1211,7 @@ export default function CaptainApp() {
         setConfirmPassword('');
         setPasswordError('');
       } else {
-        setPasswordError(data.error || 'حدث خطأ أثناء تغيير كلمة المرور');
+        setPasswordError(response.message || 'حدث خطأ أثناء تغيير كلمة المرور');
       }
     } catch (error) {
       setPasswordError('حدث خطأ في الاتصال بالخادم');

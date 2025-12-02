@@ -22,6 +22,14 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/components/MapComponent.tsx", "src/app/map/page.js"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/app/components/MapComponent.tsx",
+    "src/app/map/page.js",
+    "src/**/*.d.ts" // تضمين ملفات التعريف
+  ],
   "exclude": ["node_modules"]
 }

@@ -1,11 +1,11 @@
 // types.ts
 export type Position = [number, number];
 
-
-export type Order = {
+// أنواع الجداول الرئيسية في Supabase
+export interface Order {
   id: number;
   user_id: number;
-  caption_id: number;
+  caption_id: number | null;
   start_point: string;
   start_text: string;
   end_point: string;
@@ -23,53 +23,34 @@ export type Order = {
   user_rate: number;
   start_detlis: string;
   end_detlis: string;
-   insert_time: string;
-   discount:string;
-   km_price:string;
-   min_price:string;
-   add1:string;
-   f_km:string;
-   real_km:string,
-   real_min:string,
-   real_price:string,
-   real_street:string,
-   waiting_min:string,
-   end_time:string,
-};
+  insert_time: string;
+  updated_at: string;
+  discount: string;
+  km_price: string;
+  min_price: string;
+  add1: string;
+  f_km: string;
+  real_km: string;
+  real_min: string;
+  real_price: string;
+  real_street: string;
+  waiting_min: string;
+  end_time: string;
+  accept_time?: string;
+  start_time?: string;
+}
 
-export type OrderDetails = {
+export type OrderDetails = Pick<Order, 
+  'id' | 'ser_chi_id' | 'start_text' | 'end_text' | 'distance_km' | 
+  'duration_min' | 'cost' | 'user_rate' | 'start_detlis' | 'end_detlis' | 
+  'notes' | 'discount' | 'km_price' | 'min_price' | 'add1' | 'f_km' |
+  'start_time' | 'status' | 'real_km' | 'real_min' | 'real_price' | 
+  'real_street' | 'waiting_min' | 'end_time' | 'start_point' | 'end_point'
+>;
+
+export interface Service {
   id: number;
-  ser_chi_id: number;
-  start_text: string;
-  end_text: string;
-  distance_km: string;
-  duration_min: number;
-  cost: string;
-  user_rate: number;
-  start_detlis: string;
-  end_detlis: string;
-  notes: string;
-   discount:string;
-   km_price:string;
-   min_price:string;
-   add1:string;
-   f_km:string;
-   start_time:string;
-   status:string;
-   real_km:string,
-   real_min:string,
-   real_price:string,
-   real_street:string,
-   waiting_min:string,
-   end_time:string,
-   start_point:string,
-   end_point:string
-  
-
-};
-
-export type Service = {
-  id: number;
+  cap_id: number;
   ser_id: number;
   name1: string;
   f_km: string;
@@ -79,9 +60,11 @@ export type Service = {
   dis_cost: string;
   photo1: string;
   active: number;
-};
+  created_at: string;
+  updated_at: string;
+}
 
-export type Payment = {
+export interface Payment {
   id: number;
   cap_id: number;
   mony: string;
@@ -91,41 +74,37 @@ export type Payment = {
   insert_time: string;
   update_time: string;
   date_formatted: string;
-};
+}
 
-export type PaymentsByMonth = {
-  month_name: string;
-  payments: Payment[];
-};
+export interface Captain {
+  id: number;
+  name: string;
+  phone: string;
+  photo: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
-export type Profile = {
+export interface Profile {
   name: string;
   phone: string;
   photo: string;
-};
+}
 
-export type TrackingData = {
+export interface TrackingData {
   distance: string;
   time: string;
   price: string;
-};
+}
 
-export type Last_order = {
-  id:number,
-                    ser_chi_id:number
-                    discount_id:string,
-                    start_point:string, 
-                    end_point:string, 
-                    start_text:string, 
-                    end_text:string, 
-                    accept_time:string, 
-                    
-                    real_km:string, 
-                    real_min:string, 
-                    real_price:string, 
-                    comp_percent:string, 
-                    start_time:string,
-                    end_time:string
+export type LastOrder = Pick<Order,
+  'id' | 'ser_chi_id' | 'start_point' | 'end_point' | 'start_text' |
+  'end_text' | 'accept_time' | 'real_km' | 'real_min' | 'real_price' |
+  'start_time' | 'end_time'
+> & {
+  discount_id: string;
+  comp_percent: string;
 };
 
 export interface CaptainData {
@@ -135,7 +114,6 @@ export interface CaptainData {
   photo?: string | null;
 }
 
-///عند جلب طلب مفتوح من كوتلن
 export interface KotlinOrderData {
   id: number;
   ser_chi_id?: number;
@@ -157,14 +135,27 @@ export interface KotlinOrderData {
   end_point?: string;
   status?: string;
   start_time?: string;
-  real_km:string,
-   real_min:string,
-   real_price:string,
-   real_street:string,
-   waiting_min:string,
-   end_time:string,
-   current_lat?: number;
+  real_km: string;
+  real_min: string;
+  real_price: string;
+  real_street: string;
+  waiting_min: string;
+  end_time: string;
+  current_lat?: number;
   current_lng?: number;
-  route_points?: Position[]
-  
+  route_points?: Position[];
+}
+
+// أنواع الردود من API
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  error?: string;
+}
+
+export interface OrderStatusResponse {
+  status: 'success' | 'goodluck' | 'error';
+  message?: string;
+  current_captain_id?: number;
 }

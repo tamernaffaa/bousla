@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic"; // مطلوب لتحميل المكونات ديناميكيًا
+import { fetchChildServices, submitOrder as submitOrderApi } from "../first/UserApi";
 import Layout from "../components/Layout";
 import { FaMapMarkerAlt, FaFlagCheckered, FaSave, FaLocationArrow, FaArrowRight, FaInfoCircle, FaTimes, FaSpinner, FaChevronDown } from "react-icons/fa";
 import { motion } from "framer-motion";
@@ -558,28 +559,22 @@ const [chosenService, setChosenService] = useState<ChildService | null>(null);
     toast.error("الرجاء تحديد نقاط الانطلاق والوصول واختيار الخدمة أولاً");
     return;
   }
-
   setIsSubmitting(true);
   const loadingToast = toast.loading("جاري إرسال الطلب...");
-
   try {
-    // حساب التكاليف بنفس طريقة العرض في الواجهة
     const roundedDistance = Math.ceil(tripInfo.distance * 10) / 10;
     const roundedDuration = Math.ceil(tripInfo.adjustedDuration);
-
     const firstKm = parseFloat(chosenService.f_km) || 0;
     const kmPrice = parseFloat(chosenService.km) || 0;
     const minutePrice = parseFloat(chosenService.m_cost) || 0;
     const additionalCost = parseFloat(chosenService.add_cost) || 0;
     const discount = parseFloat(chosenService.dis_cost) || 0;
     const tax = parseFloat(chosenService.tax) || 0;
-    
     const firstKmCost = firstKm;
     const distanceCost = kmPrice * roundedDistance;
     const durationCost = minutePrice * roundedDuration;
     const totalBeforeDiscount = firstKmCost + distanceCost + durationCost + additionalCost + tax;
     const finalPrice = totalBeforeDiscount - discount;
-
     const orderData = {
       user_id: userId,
       ser_chi_id: chosenService.id, 
@@ -600,37 +595,21 @@ const [chosenService, setChosenService] = useState<ChildService | null>(null);
       add1: (additionalCost + tax).toFixed(0),
       f_km:(firstKmCost).toFixed(0)
     };
-
-    const API_URL = 'https://alrasekhooninlaw.com/bousla/submit_order.php';
-
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(orderData)
-    });
-
-    const result = await response.json();
-
-    if (!response.ok || !result.success) {
+    const result = await submitOrderApi(orderData);
+    if (!result.success) {
       throw new Error(result.message || 'فشل في إرسال الطلب');
     }
-
     if (!result.order_id) {
       throw new Error('لم يتم استلام رقم الطلب من الخادم');
     }
-
     toast.success(`تم إنشاء الطلب بنجاح! رقم الطلب: ${result.order_id}`, {
       id: loadingToast,
       duration: 5000
     });
-
     setStartPoint(null);
     setEndPoint(null);
     setTripInfo(null);
     setChosenService(null);
-
   } catch (error) {
     console.error("فشل إرسال الطلب:", error);
     const errorMessage = error instanceof Error ? error.message : "حدث خطأ أثناء إرسال الطلب";
@@ -642,26 +621,18 @@ const [chosenService, setChosenService] = useState<ChildService | null>(null);
 
 
   useEffect(() => {
-  if (!serviceId) return;
-
-  const fetchChildServices = async () => {
-    try {
-      const response = await fetch(`https://alrasekhooninlaw.com/bousla/get_child_services.php?ser_id=${serviceId}`);
-      const data = await response.json();
-      
-      if (data.success && data.services) {
-        setChildServices(data.services);
-      } else {
-        toast.error("فشل في جلب الخدمات الفرعية");
+    if (!serviceId) return;
+    const fetchChild = async () => {
+      try {
+        const data = await fetchChildServices(serviceId);
+        setChildServices(data);
+      } catch (error) {
+        console.error("Error fetching child services:", error);
+        toast.error("حدث خطأ أثناء جلب الخدمات الفرعية");
       }
-    } catch (error) {
-      console.error("Error fetching child services:", error);
-      toast.error("حدث خطأ أثناء جلب الخدمات الفرعية");
-    }
-  };
-
-  fetchChildServices();
-}, [serviceId]);
+    };
+    fetchChild();
+  }, [serviceId]);
 
   return (
     <Layout>
