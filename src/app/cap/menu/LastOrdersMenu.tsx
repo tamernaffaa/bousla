@@ -19,7 +19,7 @@ export const LastOrdersMenu: React.FC<LastOrdersMenuProps> = ({
   onClose,
   onRefresh, // إضافة دالة التحديث
   onOrderClick
-}) => {
+}) => { 
   const [timeFilter, setTimeFilter] = useState<'all' | 'day' | 'week' | 'month' | 'custom'>('day');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');

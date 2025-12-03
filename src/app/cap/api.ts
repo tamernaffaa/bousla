@@ -244,7 +244,7 @@ export const captainApi = {
   getProfile: async (capId: number): Promise<Captain | null> => {
     try {
       const { data, error } = await supabase
-        .from('captains')
+        .from('users')
         .select('*')
         .eq('id', capId)
         .single()
@@ -261,9 +261,9 @@ export const captainApi = {
   updateActivity: async (capId: number, active: boolean): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from('captains')
+        .from('users')
         .update({ 
-          active,
+          active: active ? 1 : 0,
           updated_at: new Date().toISOString()
         })
         .eq('id', capId)
@@ -287,7 +287,7 @@ export const captainApi = {
       // هذا يعتمد على كيفية تخزين كلمات المرور في قاعدة البيانات
       
       const { error } = await supabase
-        .from('captains')
+        .from('users')
         .update({ 
           password: newPassword, // تأكد من تشفير كلمة المرور
           updated_at: new Date().toISOString()
