@@ -1168,7 +1168,7 @@ export default function CaptainApp() {
 
   //ايقاف او تشغيل الخدمات
   const handleServiceToggle = useCallback(async (service: Service) => {
-    const newActive = service.active === 1 ? 0 : 1;
+    const newActive = service.active === false ? true : false;
     const originalActive = service.active;
 
     setServices(prev => prev.map(s => 

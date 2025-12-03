@@ -178,7 +178,7 @@ export const servicesApi = {
   // تحديث حالة الخدمة
   updateStatus: async (
     serviceId: number, 
-    active: number, 
+    active: boolean, 
     capId: number
   ): Promise<boolean> => {
     try {

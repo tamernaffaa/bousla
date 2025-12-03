@@ -75,13 +75,13 @@ export const ServicesMenu: React.FC<ServicesMenuProps> = ({
                   onClick={() => onToggleService(service)}
                   disabled={isUpdatingService === service.id}
                   className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none
-                    ${service.active === 1 ? 'bg-green-500' : 'bg-gray-300'}
+                    ${service.active ? 'bg-green-500' : 'bg-gray-300'}
                     ${isUpdatingService === service.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                   `}
                 >
                   <span
                     className={`inline-block w-5 h-5 transform transition-transform bg-white rounded-full shadow
-                      ${service.active === 1 ? 'translate-x-5' : 'translate-x-0'}
+                      ${service.active ? 'translate-x-5' : 'translate-x-0'}
                     `}
                   />
                   {isUpdatingService === service.id && (

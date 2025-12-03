@@ -59,7 +59,7 @@ export interface Service {
   add_cost: string;
   dis_cost: string;
   photo1: string;
-  active: number;
+  active: boolean;
   created_at: string;
   updated_at: string;
 }
