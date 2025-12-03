@@ -1,4 +1,5 @@
 // جلب الخدمات الفرعية حسب serviceId
+import type { Order } from '../cap/types';
 export async function fetchChildServices(serviceId: number) {
   try {
     const { data, error } = await supabase
@@ -13,7 +14,7 @@ export async function fetchChildServices(serviceId: number) {
   }
 }
 // إرسال الطلب إلى قاعدة بيانات Supabase
-export async function submitOrder(orderData: any) {
+export async function submitOrder(orderData: Order) {
   try {
     const { data, error } = await supabase
       .from('orders')

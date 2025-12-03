@@ -56,15 +56,12 @@ export const ServicesMenu: React.FC<ServicesMenuProps> = ({
             {services.map(service => (
               <div key={service.id} className="bg-white p-4 rounded-lg shadow border border-gray-100 flex items-center justify-between">
                 <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                  <Image 
-                    src={service.photo1 || '/default-service.png'} 
+                  <Image
+                    src={service.photo1 && service.photo1.trim() !== '' ? service.photo1 : '/default-service.png'}
                     alt={service.name1}
                     width={48}
                     height={48}
                     className="object-cover rounded-lg"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/default-service.png';
-                    }}
                   />
                   <div className="text-right">
                     <h3 className="font-medium text-gray-800">{service.name1}</h3>
