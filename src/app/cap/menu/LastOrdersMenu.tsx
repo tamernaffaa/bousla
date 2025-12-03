@@ -2,11 +2,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Last_order } from '../types';
+import { LastOrder } from '../types';
 import { extractMunicipality } from '../mapUtils';
 
 interface LastOrdersMenuProps {
-  orders: Last_order[];
+  orders: LastOrder[];
   isRefreshing: boolean; // إضافة خاصية التحديث
   onClose: () => void;
   onRefresh: () => void; // إضافة دالة التحديث
