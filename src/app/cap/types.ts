@@ -1,7 +1,7 @@
 // types.ts
 export type Position = [number, number];
 
-// أنواع الجداول الرئيسية في Supabase
+// أنواع الجداول الرئيسية في Supabase 2026
 export interface Order {
   id: number;
   user_id: number;
