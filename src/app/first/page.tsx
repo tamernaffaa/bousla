@@ -74,7 +74,7 @@ export default function HomePage() {
     try {
       setLoading(true);
       const data = await fetchTripsApi(1);
-      const formattedTrips = data.map((trip: any) => ({
+      const formattedTrips = data.map((trip: RawTrip) => ({
         id: trip.id || 0,
         from: trip.start_text || "موقع الانطلاق غير محدد",
         to: trip.end_text || "موقع الوصول غير محدد",
@@ -97,7 +97,7 @@ export default function HomePage() {
     try {
       setServicesLoading(true);
       const data = await fetchServicesApi();
-      const formattedServices = data.map((service: any) => ({
+      const formattedServices = data.map((service: RawService) => ({
         id: service.id || 0,
         ser_name: service.ser_name || "غير محدد",
         note1: service.note1 || "",
