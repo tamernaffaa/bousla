@@ -14,7 +14,7 @@ export async function fetchChildServices(serviceId: number) {
   }
 }
 // إرسال الطلب إلى قاعدة بيانات Supabase
-export async function submitOrder(orderData: Order) {
+export async function submitOrder(orderData: Partial<Order>) {
   try {
     const { data, error } = await supabase
       .from('orders')
