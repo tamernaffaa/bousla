@@ -1213,7 +1213,7 @@ const BetterLuckMessage = ({ onClose }: { onClose: () => void }) => {
                         alt={service.name1}
                         className="w-12 h-12 object-cover rounded-lg"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/default-service.png';
+                          (e.target as HTMLImageElement).src = '/logo.png';
                         }}
                       />
                       <div dir="rtl">

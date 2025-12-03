@@ -57,7 +57,7 @@ export const ServicesMenu: React.FC<ServicesMenuProps> = ({
               <div key={service.id} className="bg-white p-4 rounded-lg shadow border border-gray-100 flex items-center justify-between">
                 <div className="flex items-center space-x-3 rtl:space-x-reverse">
                   <Image
-                    src={service.photo1 && service.photo1.trim() !== '' ? service.photo1 : '/default-service.png'}
+                    src={service.photo1 && service.photo1.trim() !== '' ? service.photo1 : '/logo.png'}
                     alt={service.name1}
                     width={48}
                     height={48}
