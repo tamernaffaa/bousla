@@ -7,7 +7,8 @@ import {
   LastOrder, 
   ApiResponse, 
   OrderStatusResponse,
-  OrderDetails 
+  OrderDetails,
+  Captain
 } from './types'
 
 // تهيئة Supabase client
@@ -98,7 +99,7 @@ export const ordersApi = {
       }
 
       // تحديث حالة الطلب
-      const updateData: any = { 
+      const updateData: Partial<Order> & { [key: string]: unknown } = {
         status,
         updated_at: new Date().toISOString()
       }
@@ -240,7 +241,7 @@ export const paymentsApi = {
 // دوال الكابتن
 export const captainApi = {
   // جلب بيانات الكابتن
-  getProfile: async (capId: number): Promise<any> => {
+  getProfile: async (capId: number): Promise<Captain | null> => {
     try {
       const { data, error } = await supabase
         .from('captains')
@@ -309,22 +310,22 @@ export const captainApi = {
 }
 
 // دوال التوافق مع الكود القديم (للتحديث التدريجي)
-export const fetchData = async <T = any>(
+export const fetchData = async <T = unknown>(
   endpoint: string,
-  params: Record<string, any> = {}
+  params: Record<string, unknown> = {}
 ): Promise<ApiResponse<T>> => {
   try {
     switch (endpoint) {
       case 'cap_ser':
-        const services = await servicesApi.getCaptainServices(params.cap_id)
+        const services = await servicesApi.getCaptainServices(params.cap_id as number)
         return { success: true, data: services as T }
       
       case 'get_cap_payment':
-        const payments = await paymentsApi.getCaptainPayments(params.cap_id)
+        const payments = await paymentsApi.getCaptainPayments(params.cap_id as number)
         return { success: true, data: payments as T }
       
       case 'get_lastorder':
-        const lastOrders = await ordersApi.getLastOrders(params.cap_id)
+        const lastOrders = await ordersApi.getLastOrders(params.cap_id as number)
         return { success: true, data: lastOrders as T }
       
       default:
@@ -344,12 +345,12 @@ export const updateOrderStatus = ordersApi.updateStatus
 
 export const updateServiceStatus = servicesApi.updateStatus
 
-export const fetchlast_order = async <T = any>(
+export const fetchlast_order = async <T = unknown>(
   endpoint: string,
-  params: Record<string, any> = {}
+  params: Record<string, unknown> = {}
 ): Promise<ApiResponse<T>> => {
   if (endpoint === 'get_lastorder') {
-    const lastOrders = await ordersApi.getLastOrders(params.cap_id)
+    const lastOrders = await ordersApi.getLastOrders(params.cap_id as number)
     return { success: true, data: lastOrders as T }
   }
   
