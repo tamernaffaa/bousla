@@ -386,38 +386,6 @@ export default function CaptainApp() {
 
   // استقبال تحديثات الموقع للطلبات النشطة
   useEffect(() => {
-    // تعريف دالة استقبال بيانات المستخدم من Flutter
-    window.setUserData = (userData: any) => {
-      console.log('✅ User data received from Flutter:', userData);
-
-      // تحديث بيانات المستخدم
-      if (userData) {
-        setProfile(prev => ({
-          ...prev,
-          name: userData.name || prev.name,
-          phone: userData.phone || prev.phone,
-          photo: userData.photo || prev.photo
-        }));
-
-        // حفظ معرف المستخدم
-        if (userData.id) {
-          setCaptainId(userData.id);
-        }
-
-        console.log('📝 Profile updated:', {
-          name: userData.name,
-          phone: userData.phone,
-          cap: userData.cap
-        });
-      }
-    };
-
-    // التحقق من وجود بيانات محفوظة مسبقاً
-    if ((window as any)._flutterUserData) {
-      console.log('📦 Found cached user data');
-      window.setUserData((window as any)._flutterUserData);
-    }
-
     // تعريف دالة استقبال تحديثات الموقع من Kotlin للطلبات النشطة
     window.updateOrderLocation = (orderId: number, lat: number, lng: number) => {
       console.log('Received location update for order:', orderId, lat, lng);
