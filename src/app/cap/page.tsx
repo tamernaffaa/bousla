@@ -7,16 +7,16 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
-import { 
-  Order, OrderDetails, Payment, Service, Position, 
+import {
+  Order, OrderDetails, Payment, Service, Position,
   Profile, TrackingData, LastOrder, CaptainData, KotlinOrderData, OrderStatusResponse
 } from './types';
 import { createCustomIcon, decodePolyline, extractMunicipality, createCarIcon } from './mapUtils';
-import { 
-  ordersApi, 
-  servicesApi, 
-  paymentsApi, 
-  captainApi 
+import {
+  ordersApi,
+  servicesApi,
+  paymentsApi,
+  captainApi
 } from './api';
 import { OrderDetailsModal } from './OrderDetailsModal';
 import { BetterLuckMessage } from './BetterLuckMessage';
@@ -46,7 +46,7 @@ const DynamicLastOrdersMenu = dynamic(
 // تحميل مكونات الخريطة بعد ذلك
 const MapContainer = dynamic(
   () => import('react-leaflet').then((mod) => mod.MapContainer),
-  { 
+  {
     ssr: false,
     loading: () => <div className="h-full w-full bg-gray-100 flex items-center justify-center">
       <div className="text-gray-500">جاري تحميل الخريطة...</div>
@@ -55,7 +55,7 @@ const MapContainer = dynamic(
 
 const MapComponent = dynamic(
   () => import('./MapComponent').then((mod) => mod.MapComponent),
-  { 
+  {
     ssr: false,
     loading: () => <div className="h-full w-full bg-gray-100" />
   }
@@ -64,26 +64,26 @@ const MapComponent = dynamic(
 const DEFAULT_POSITION: Position = [33.5138, 36.2765];
 
 declare global {
-   interface Window {
+  interface Window {
     // للاتصال من JavaScript إلى Kotlin
     Android?: {
       receiveMessage: (action: string, message: string) => void;
     };
-    
+
     // للاتصال من Kotlin إلى JavaScript
     updateLocation?: (lat: number, lng: number) => void;
     handleNewOrder?: (orderId: number) => void;
     setCaptainData?: (data: CaptainData) => void;
-    update_cost?: (km:string,min:string,cost:string) =>void;
+    update_cost?: (km: string, min: string, cost: string) => void;
     handleOpenOrder?: (orderData: KotlinOrderData) => void;
     handleOpenOrderResponse?: (response: string) => void;
     openYandexNavigation?: (startLat: number, startLng: number, endLat: number, endLng: number) => void;
     handleStopTrackingButton?: () => void;
-    
+
     // دالات جديدة لتتبع المسار
     updateOrderLocation?: (orderId: number, lat: number, lng: number) => void;
     updateOrderRoute?: (orderId: number, routeData: string) => void;
-    
+
     // إذا كنت تستخدم ReactNativeWebView
     ReactNativeWebView?: {
       postMessage: (message: string) => void;
@@ -119,7 +119,7 @@ export default function CaptainApp() {
   const [userRate, setUserRate] = useState(0);
   const [pokeCount, setPokeCount] = useState(0);
   const [routePoints, setRoutePoints] = useState<Position[]>([]);
-  const [markers, setMarkers] = useState<{position: Position, icon: L.Icon, popup: string}[]>([]);
+  const [markers, setMarkers] = useState<{ position: Position, icon: L.Icon, popup: string }[]>([]);
   const [circleCenter, setCircleCenter] = useState<Position>(DEFAULT_POSITION);
   const [circleRadius, setCircleRadius] = useState(1000);
   const [mapZoom, setMapZoom] = useState(14);
@@ -130,7 +130,7 @@ export default function CaptainApp() {
   const [selectedOrder, setSelectedOrder] = useState<OrderDetails | null>(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
-  const [acceptOrderStatus, setAcceptOrderStatus] = useState<'idle' |'goodluck' | 'loading' | 'success' | 'error'>('idle');
+  const [acceptOrderStatus, setAcceptOrderStatus] = useState<'idle' | 'goodluck' | 'loading' | 'success' | 'error'>('idle');
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -153,7 +153,7 @@ export default function CaptainApp() {
   });
   const [captainId, setCaptainId] = useState<number>(0);
   const [menusLoaded, setMenusLoaded] = useState(false);
-  
+
   // حالة جديدة لتتبع المسار النشط
   const [activeRoute, setActiveRoute] = useState<{
     orderId: number;
@@ -161,7 +161,7 @@ export default function CaptainApp() {
   } | null>(null);
 
   const mapRef = useRef<L.Map | null>(null);
-  const [radiusText, setRadiusText] = useState<{position: Position, text: string} | null>(null);
+  const [radiusText, setRadiusText] = useState<{ position: Position, text: string } | null>(null);
 
   //دالة لمتابعة ارسال الطلب المكتمل وغير مرسل
   const [completedOrderData, setCompletedOrderData] = useState<{
@@ -176,31 +176,31 @@ export default function CaptainApp() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
-      
+
       const id = urlParams.get('id');
       const name = urlParams.get('name');
       const phone = urlParams.get('phone');
       const photo = urlParams.get('photo');
       const activeParam = urlParams.get('active');
-      
+
       if (id) {
         setCaptainId(Number(id));
       }
 
       // تحويل قيمة active من سلسلة نصية إلى boolean
       setActive(activeParam === 'true');
-      
+
       // تحديث البيانات الأساسية
       const updatedProfile = {
         name: name ? decodeURIComponent(name) : profile.name,
         phone: phone ? decodeURIComponent(phone) : profile.phone,
         photo: profile.photo // الاحتفاظ بالقيمة الحالية افتراضيًا
       };
-      
+
       // التحقق من صحة الصورة قبل التحديث
       if (photo) {
         const photoUrl = decodeURIComponent(photo);
-        
+
         // دالة للتحقق من صحة الصورة
         const checkImageValidity = async (url: string) => {
           try {
@@ -216,7 +216,7 @@ export default function CaptainApp() {
             return null; // حدث خطأ في التحقق
           }
         };
-        
+
         // التحقق من الصورة وتحديث الحالة فقط إذا كانت صالحة
         checkImageValidity(photoUrl).then(validUrl => {
           if (validUrl) {
@@ -246,20 +246,20 @@ export default function CaptainApp() {
   const sendToKotlin = (action: string, message: string) => {
     try {
       console.log(`Sending to Kotlin - Action: ${action}, Message: ${message}`);
-      
+
       // الطريقة المباشرة مع TypeScript
       if (window.Android?.receiveMessage) {
         window.Android.receiveMessage(action, message);
         return;
       }
-      
+
       // إذا كنت تستخدم ReactNativeWebView (يحتاج إلى JSON)
       if (window.ReactNativeWebView?.postMessage) {
         const jsonMessage = JSON.stringify({ action, message });
         window.ReactNativeWebView.postMessage(jsonMessage);
         return;
       }
-      
+
       // للتنمية المحلية/المتصفح
       console.warn('Android interface not available, mocking send:', { action, message });
       mockKotlinResponse(action, message);
@@ -275,7 +275,7 @@ export default function CaptainApp() {
 
   // Memoized values
   const filteredPayments = useMemo(() => {
-    return filterMonth 
+    return filterMonth
       ? payments.filter(p => p.insert_time.startsWith(filterMonth))
       : payments;
   }, [payments, filterMonth]);
@@ -308,10 +308,10 @@ export default function CaptainApp() {
           import('./menu/ServicesMenu'),
           import('./menu/LastOrdersMenu')
         ]);
-        
+
         // تحديث حالة أن القوائم قد تم تحميلها
         setMenusLoaded(true);
-        
+
         // ثم تحميل البيانات
         fetchInitialData();
         fetchPayments();
@@ -339,13 +339,13 @@ export default function CaptainApp() {
     // تعريف دالة استقبال الموقع من Kotlin
     window.updateLocation = (lat: number, lng: number) => {
       const newLocation: Position = [lat, lng];
-      
+
       // تحديث حالة الموقع الحالي
       setCurrentLocation(newLocation);
-      
+
       // تحديث مركز الدائرة
       setCircleCenter(newLocation);
-      
+
       // تحديث موقع السيارة فقط
       if (icons.carIcon) {
         setCarMarker({
@@ -353,13 +353,13 @@ export default function CaptainApp() {
           icon: icons.carIcon
         });
       }
-      
+
       // إزالة أي كود يقوم بتغيير مركز الخريطة أو مستوى zoom تلقائياً
       // لا تستخدم mapRef.current.flyTo() أو setView() هنا
     };
 
     return () => {
-      window.updateLocation = () => {};
+      window.updateLocation = () => { };
     };
   }, [icons.carIcon]);
 
@@ -372,7 +372,7 @@ export default function CaptainApp() {
           createCustomIcon('red'),
           createCustomIcon('green')
         ]);
-        
+
         setIcons({
           carIcon,
           redIcon,
@@ -386,10 +386,42 @@ export default function CaptainApp() {
 
   // استقبال تحديثات الموقع للطلبات النشطة
   useEffect(() => {
+    // تعريف دالة استقبال بيانات المستخدم من Flutter
+    window.setUserData = (userData: any) => {
+      console.log('✅ User data received from Flutter:', userData);
+
+      // تحديث بيانات المستخدم
+      if (userData) {
+        setProfile(prev => ({
+          ...prev,
+          name: userData.name || prev.name,
+          phone: userData.phone || prev.phone,
+          photo: userData.photo || prev.photo
+        }));
+
+        // حفظ معرف المستخدم
+        if (userData.id) {
+          setCaptainId(userData.id);
+        }
+
+        console.log('📝 Profile updated:', {
+          name: userData.name,
+          phone: userData.phone,
+          cap: userData.cap
+        });
+      }
+    };
+
+    // التحقق من وجود بيانات محفوظة مسبقاً
+    if ((window as any)._flutterUserData) {
+      console.log('📦 Found cached user data');
+      window.setUserData((window as any)._flutterUserData);
+    }
+
     // تعريف دالة استقبال تحديثات الموقع من Kotlin للطلبات النشطة
     window.updateOrderLocation = (orderId: number, lat: number, lng: number) => {
       console.log('Received location update for order:', orderId, lat, lng);
-      
+
       // إذا كان هذا الطلب هو الطلب النشط الحالي
       if (activeRoute && activeRoute.orderId === orderId) {
         // إضافة النقطة الجديدة إلى المسار
@@ -398,7 +430,7 @@ export default function CaptainApp() {
           ...prev,
           points: [...prev.points, newPoint]
         } : null);
-        
+
         // تحديث موقع السيارة على الخريطة
         if (icons.carIcon) {
           setCarMarker({
@@ -414,7 +446,7 @@ export default function CaptainApp() {
       try {
         const points = JSON.parse(routeData) as Position[];
         console.log('Received full route for order:', orderId, points.length, 'points');
-        
+
         setActiveRoute({
           orderId,
           points
@@ -425,8 +457,8 @@ export default function CaptainApp() {
     };
 
     return () => {
-      window.updateOrderLocation = () => {};
-      window.updateOrderRoute = () => {};
+      window.updateOrderLocation = () => { };
+      window.updateOrderRoute = () => { };
     };
   }, [activeRoute, icons.carIcon]);
 
@@ -477,10 +509,10 @@ export default function CaptainApp() {
   const handleActivate = useCallback(() => {
     const newActiveState = !active;
     setActive(newActiveState);
-    
+
     // تحديث حالة النشاط في قاعدة البيانات
     captainApi.updateActivity(captainId, newActiveState);
-    
+
     // إرسال القيمة إلى Kotlin بناءً على الحالة الجديدة
     sendToKotlin("start_cap_serv", newActiveState ? "1" : "0");
   }, [active, captainId]);
@@ -493,17 +525,17 @@ export default function CaptainApp() {
 
   const drawRoute = useCallback(async (startPoint: string, endPoint: string) => {
     console.log('Attempting to draw route from:', startPoint, 'to:', endPoint);
-    
+
     // تنظيف المسار الحالي أولاً
     clearRoute();
-    
+
     if (!startPoint || !endPoint) {
       console.error('Missing start or end point');
       return;
     }
 
     let startCoords, endCoords;
-    
+
     // محاولة تحليل التنسيق المختلف
     if (startPoint.includes(' ') && endPoint.includes(' ')) {
       // إذا كان التنسيق "lat,lng lat,lng"
@@ -520,7 +552,7 @@ export default function CaptainApp() {
       startCoords = startPoint.split(',');
       endCoords = endPoint.split(',');
     }
-    
+
     if (startCoords.length !== 2 || endCoords.length !== 2) {
       console.error('Invalid coordinate format. Expected "lat,lng" or "lat,lng lat,lng"');
       console.error('Start coords:', startCoords, 'End coords:', endCoords);
@@ -531,42 +563,42 @@ export default function CaptainApp() {
     const startLng = parseFloat(startCoords[1].trim());
     const endLat = parseFloat(endCoords[0].trim());
     const endLng = parseFloat(endCoords[1].trim());
-    
+
     if (isNaN(startLat) || isNaN(startLng) || isNaN(endLat) || isNaN(endLng)) {
-      console.error('Invalid coordinates:', {startLat, startLng, endLat, endLng});
+      console.error('Invalid coordinates:', { startLat, startLng, endLat, endLng });
       return;
     }
 
-    console.log('Parsed coordinates:', {startLat, startLng, endLat, endLng});
+    console.log('Parsed coordinates:', { startLat, startLng, endLat, endLng });
 
     try {
       console.log('Fetching route from OSRM...');
       const response = await fetch(
         `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full`
       );
-      
+
       if (!response.ok) {
         throw new Error(`OSRM API error: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log('OSRM response:', data);
-      
+
       let coordinates: [number, number][] = [];
-      
+
       if (data.code === 'Ok' && data.routes?.[0]) {
         const route = data.routes[0];
-        
+
         if (typeof route.geometry === 'string') {
           const decoded = decodePolyline(route.geometry);
           coordinates = decoded.map(point => [point.lat, point.lng]);
         } else if (route.geometry?.coordinates) {
           coordinates = route.geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]]);
         }
-        
+
         console.log('Route calculated with', coordinates.length, 'points');
       }
-      
+
       if (coordinates.length === 0) {
         console.log('Using straight line as fallback');
         coordinates = [
@@ -574,35 +606,35 @@ export default function CaptainApp() {
           [endLat, endLng]
         ];
       }
-      
+
       setRoutePoints(coordinates);
-      
+
       // استخدام أيقونات مؤقتة إذا لم تكن الأيقونات الرئيسية جاهزة
       let redIconToUse = icons.redIcon;
       let greenIconToUse = icons.greenIcon;
-      
+
       if (!redIconToUse) {
         redIconToUse = await createCustomIcon('red');
       }
       if (!greenIconToUse) {
         greenIconToUse = await createCustomIcon('green');
       }
-      
+
       setMarkers([
-        { 
-          position: [startLat, startLng], 
+        {
+          position: [startLat, startLng],
           icon: redIconToUse,
           popup: "نقطة الانطلاق"
         },
-        { 
-          position: [endLat, endLng], 
+        {
+          position: [endLat, endLng],
           icon: greenIconToUse,
           popup: "نقطة الوصول"
         }
       ]);
-      
+
       console.log('Route and markers set successfully');
-      
+
     } catch (error) {
       console.error('Error calculating route:', error);
       // رسم خط مباشر كبديل في حالة الخطأ
@@ -610,30 +642,30 @@ export default function CaptainApp() {
         [startLat, startLng],
         [endLat, endLng]
       ]);
-      
+
       let redIconToUse = icons.redIcon;
       let greenIconToUse = icons.greenIcon;
-      
+
       if (!redIconToUse) {
         redIconToUse = await createCustomIcon('red');
       }
       if (!greenIconToUse) {
         greenIconToUse = await createCustomIcon('green');
       }
-      
+
       setMarkers([
-        { 
-          position: [startLat, startLng], 
+        {
+          position: [startLat, startLng],
           icon: redIconToUse,
           popup: "نقطة الانطلاق"
         },
-        { 
-          position: [endLat, endLng], 
+        {
+          position: [endLat, endLng],
           icon: greenIconToUse,
           popup: "نقطة الوصول"
         }
       ]);
-      
+
       console.log('Fallback straight line route set');
     }
   }, [clearRoute, icons.redIcon, icons.greenIcon]);
@@ -641,12 +673,12 @@ export default function CaptainApp() {
   const updateZoneRadius = useCallback((radius: number) => {
     const newRadius = Math.max(0.2, Math.min(5, radius));
     setZoneRadius(newRadius);
-    
+
     const radiusInMeters = newRadius * 1000;
     setCircleRadius(radiusInMeters);
 
     sendToKotlin("update_zone", newRadius.toFixed(1)); // رقم واحد بعد الفاصلة
-    
+
     // تحديث نص نصف القطر في منتصف الدائرة
     if (currentLocation) {
       setRadiusText({
@@ -668,11 +700,11 @@ export default function CaptainApp() {
     // تعريف دالة استقبال الطلبات من Kotlin
     window.handleNewOrder = async (orderId: number) => {
       console.log('Received new order ID:', orderId);
-      
+
       try {
         // جلب تفاصيل الطلب من API
         const order = await ordersApi.getById(orderId);
-        
+
         if (order) {
           setSelectedOrder({
             id: order.id,
@@ -702,9 +734,9 @@ export default function CaptainApp() {
             start_point: order.start_point,
             end_point: order.end_point
           });
-          
+
           setShowOrderDetails(true);
-          
+
           if (order.start_point && order.end_point) {
             drawRoute(order.start_point, order.end_point);
           }
@@ -716,16 +748,16 @@ export default function CaptainApp() {
 
     return () => {
       // تنظيف الدالة عند إلغاء التثبيت
-      window.handleNewOrder = () => {};
+      window.handleNewOrder = () => { };
     };
   }, [drawRoute]);
 
   const openOrderDetails = useCallback(async (orderId: number) => {
     console.log('Fetching order with ID:', orderId);
     setAcceptOrderStatus('loading');
-    
+
     const order = await ordersApi.getById(orderId);
-    
+
     if (!order) {
       console.error('No order data received for ID:', orderId);
       setAcceptOrderStatus('error');
@@ -760,10 +792,10 @@ export default function CaptainApp() {
       start_point: order.start_point,
       end_point: order.end_point
     });
-    
+
     setAcceptOrderStatus('idle');
     setShowOrderDetails(true);
-    
+
     if (order.start_point && order.end_point) {
       drawRoute(order.start_point, order.end_point);
     }
@@ -781,7 +813,7 @@ export default function CaptainApp() {
 
       if (result.status === 'success') {
         setAcceptOrderStatus('success');
-        
+
         // إرسال بيانات الطلب إلى Kotlin
         const orderData = {
           id: selectedOrder.id,
@@ -801,20 +833,20 @@ export default function CaptainApp() {
           start_point: selectedOrder.start_point,
           end_point: selectedOrder.end_point
         };
-        
+
         sendToKotlin("order_accepted", JSON.stringify(orderData));
 
         // إيقاف زر استقبال الطلبات
         setActive(false);
-        
+
         setTimeout(() => {
           setShowOrderDetails(false);
           setAcceptOrderStatus('idle');
-          
+
           // إظهار واجهة متابعة الطلب
           setTrackingOrder(selectedOrder);
           setShowOrderTracking(true);
-          
+
           // بدء تتبع المسار
           sendToKotlin("start_route_tracking", selectedOrder.id.toString());
         }, 2000);
@@ -858,7 +890,7 @@ export default function CaptainApp() {
         sendToKotlin("order_status_update", JSON.stringify({
           orderId: trackingOrder.id,
           status: status,
-          date_time: new Date().toISOString() 
+          date_time: new Date().toISOString()
         }));
 
         clearRoute();
@@ -881,16 +913,16 @@ export default function CaptainApp() {
         sendToKotlin("order_status_update", JSON.stringify({
           orderId: trackingOrder.id,
           status: status,
-          date_time: new Date().toISOString() 
+          date_time: new Date().toISOString()
         }));
-        
+
         if (status === "completed") {
           sendToKotlin("delete_order_finish", "0");
         }
-        
+
         console.log(`تم تحديث حالة الطلب ${trackingOrder.id} إلى ${status} بنجاح`);
         setAcceptOrderStatus('success');
-        
+
         // إخفاء مؤشر الانتظار بعد نجاح العملية
         setTimeout(() => {
           setAcceptOrderStatus('idle');
@@ -917,13 +949,13 @@ export default function CaptainApp() {
     // تعريف دالة استقبال الرد من Kotlin
     window.handleOpenOrderResponse = (response: string) => {
       console.log('Open order response:', response);
-      
+
       if (response !== "no_open_order") {
         try {
           // محاولة تحليل الرد كمصفوفة أولاً
           const orderDataArray = JSON.parse(response);
           let orderData: KotlinOrderData | null = null;
-          
+
           if (Array.isArray(orderDataArray) && orderDataArray.length > 0) {
             // أخذ أول عنصر في المصفوفة
             orderData = orderDataArray[0];
@@ -931,14 +963,14 @@ export default function CaptainApp() {
             // إذا كان كائنًا وليس مصفوفة
             orderData = orderDataArray;
           }
-          
+
           if (orderData && typeof orderData.id === 'number') {
             if (orderData.status === "completed") {
               // عرض واجهة الطلب المكتمل
               setCompletedOrderData({
                 order: orderData,
                 real_km: orderData.real_km || "0",
-                real_min: orderData.real_min || "0", 
+                real_min: orderData.real_min || "0",
                 real_price: orderData.real_price || "0",
                 end_time: orderData.end_time || new Date().toISOString()
               });
@@ -958,7 +990,7 @@ export default function CaptainApp() {
     checkForOpenOrder();
 
     return () => {
-      window.handleOpenOrderResponse = () => {};
+      window.handleOpenOrderResponse = () => { };
     };
   }, []);
 
@@ -968,11 +1000,11 @@ export default function CaptainApp() {
 
     try {
       setAcceptOrderStatus('loading');
-      
+
       // إرسال تحديث الحالة للسيرفر
       const result = await ordersApi.updateStatus(
-        completedOrderData.order.id, 
-        captainId, 
+        completedOrderData.order.id,
+        captainId,
         "completed"
       );
 
@@ -988,12 +1020,12 @@ export default function CaptainApp() {
         }));
 
         sendToKotlin("delete_order_finish", "0");
-        
+
         setAcceptOrderStatus('success');
         setCompletedOrderData(null);
 
         clearRoute();
-        
+
         setTimeout(() => {
           setAcceptOrderStatus('idle');
         }, 2000);
@@ -1010,7 +1042,7 @@ export default function CaptainApp() {
   // تطوير دالة handleOpenOrder لمعالجة البيانات الكاملة
   const handleOpenOrder = useCallback((orderData: KotlinOrderData) => {
     console.log('Received open order:', orderData);
-    
+
     // إنشاء كائن الطلب مع جميع البيانات
     const trackingOrderData: OrderDetails = {
       id: orderData.id,
@@ -1018,13 +1050,13 @@ export default function CaptainApp() {
       start_text: orderData.start_text || '',
       end_text: orderData.end_text || '',
       distance_km: orderData.distance_km || '0.0',
-      duration_min: typeof orderData.duration_min === 'string' 
-          ? parseInt(orderData.duration_min) || 0 
-          : orderData.duration_min || 0,
+      duration_min: typeof orderData.duration_min === 'string'
+        ? parseInt(orderData.duration_min) || 0
+        : orderData.duration_min || 0,
       cost: orderData.cost || '0.0',
-      user_rate: typeof orderData.user_rate === 'string' 
-          ? parseInt(orderData.user_rate) || 0 
-          : orderData.user_rate || 0,
+      user_rate: typeof orderData.user_rate === 'string'
+        ? parseInt(orderData.user_rate) || 0
+        : orderData.user_rate || 0,
       start_detlis: orderData.start_detlis || '',
       end_detlis: orderData.end_detlis || '',
       notes: orderData.notes || 'لا توجد ملاحظات',
@@ -1044,11 +1076,11 @@ export default function CaptainApp() {
       start_point: orderData.start_point || "",
       end_point: orderData.end_point || ""
     };
-    
+
     // تعيين حالة التتبع - استخدام حالة الطلب من Kotlin إذا كانت متوفرة
     setTrackingOrder(trackingOrderData);
     setShowOrderTracking(true);
-    
+
     // بدء تتبع المسار إذا كانت هناك بيانات موقع
     if (orderData.current_lat && orderData.current_lng) {
       const initialPoint: Position = [orderData.current_lat, orderData.current_lng];
@@ -1056,7 +1088,7 @@ export default function CaptainApp() {
         orderId: orderData.id,
         points: [initialPoint]
       });
-      
+
       // تحديث موقع السيارة
       if (icons.carIcon) {
         setCarMarker({
@@ -1065,7 +1097,7 @@ export default function CaptainApp() {
         });
       }
     }
-    
+
     // إذا كانت هناك نقاط طريق، رسم المسار
     if (orderData.start_point && orderData.end_point) {
       console.log('Drawing route for open order:', orderData.start_point, orderData.end_point);
@@ -1073,7 +1105,7 @@ export default function CaptainApp() {
     } else {
       console.warn('Missing start_point or end_point in open order data');
     }
-    
+
     // إرسال حالة الطلب إلى Kotlin للتأكد من المزامنة
     sendToKotlin("order_tracking_started", JSON.stringify({
       orderId: orderData.id,
@@ -1107,12 +1139,12 @@ export default function CaptainApp() {
       sendToKotlin("poke_customer", trackingOrder.id.toString());
     }
   }, [trackingOrder]);
-  
+
   //الاتصال بالشركة
   const handleCallCompany = useCallback(() => {
     sendToKotlin("call_company", "");
   }, []);
-  
+
   //الاتصال بالطوارئ
   const handleCallEmergency = useCallback(() => {
     sendToKotlin("call_emergency", "");
@@ -1122,13 +1154,13 @@ export default function CaptainApp() {
   useEffect(() => {
     window.update_cost = (km: string, min: string, cost: string) => {
       console.log('Received cost data:', { km, min, cost });
-      
+
       setTrackingData({
         distance: km,
         time: min,
         price: cost
       });
-      
+
       if (trackingOrder) {
         setTrackingOrder(prev => prev ? {
           ...prev,
@@ -1150,19 +1182,19 @@ export default function CaptainApp() {
     // تعريف دالة استقبال أمر إيقاف التتبع من Kotlin
     window.handleStopTrackingButton = () => {
       console.log('Received stop tracking button command from Android');
-      
+
       // إيقاف حالة النشاط
       setActive(false);
-      
+
       // إيقاف تتبع المسار
       stopRouteTracking();
-      
+
       // تنظيف المسار
       clearRoute();
     };
 
     return () => {
-      window.handleStopTrackingButton = () => {};
+      window.handleStopTrackingButton = () => { };
     };
   }, [clearRoute, stopRouteTracking]);
 
@@ -1171,7 +1203,7 @@ export default function CaptainApp() {
     const newActive = service.active === false ? true : false;
     const originalActive = service.active;
 
-    setServices(prev => prev.map(s => 
+    setServices(prev => prev.map(s =>
       s.id === service.id ? { ...s, active: newActive } : s
     ));
 
@@ -1181,7 +1213,7 @@ export default function CaptainApp() {
         throw new Error('Failed to update service status');
       }
     } catch (error) {
-      setServices(prev => prev.map(s => 
+      setServices(prev => prev.map(s =>
         s.id === service.id ? { ...s, active: originalActive } : s
       ));
       console.error('Failed to update service:', error);
@@ -1223,26 +1255,26 @@ export default function CaptainApp() {
       {/* Header */}
       <header className="bg-blue-600 text-white p-4 flex justify-between items-center">
         <div className="flex items-center space-x-2">
-          <button 
+          <button
             onClick={() => setShowProfile(true)}
             className="text-xl mr-2"
           >
             ☰
           </button>
         </div>
-        
+
         <h1 className="text-xl font-bold">كابتن بوصلة</h1>
-        
+
         <div className="flex items-center">
           <span className={`text-sm mr-2 ${active ? "text-white-600" : "text-gray-300"}`}>
             {active ? "نشط" : "غير نشط"}
           </span>
           <label className="relative inline-flex items-center cursor-pointer">
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={active}
               onChange={handleActivate}
-              className="sr-only peer" 
+              className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
           </label>
@@ -1257,14 +1289,14 @@ export default function CaptainApp() {
             <Suspense fallback={<div className="h-full w-full bg-gray-100 flex items-center justify-center">
               <div className="text-gray-500">جاري تحميل الخريطة...</div>
             </div>}>
-              <MapContainer 
-                center={currentLocation || DEFAULT_POSITION} 
-                zoom={mapZoom} 
+              <MapContainer
+                center={currentLocation || DEFAULT_POSITION}
+                zoom={mapZoom}
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
                 ref={mapRef}
               >
-                <MapComponent 
+                <MapComponent
                   center={currentLocation || DEFAULT_POSITION}
                   zoom={mapZoom}
                   routePoints={routePoints}
@@ -1293,7 +1325,7 @@ export default function CaptainApp() {
         {/* Floating Action Buttons */}
         {menusLoaded && (
           <div className="absolute right-4 bottom-20 flex flex-col space-y-3 z-10">
-            <button 
+            <button
               onClick={handleMyLocation}
               className="bg-white bg-opacity-80 hover:bg-opacity-100 text-blue-600 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
               title="الموقع الحالي"
@@ -1303,8 +1335,8 @@ export default function CaptainApp() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </button>
-            
-            <button 
+
+            <button
               onClick={() => setShowServices(true)}
               className="bg-white bg-opacity-80 hover:bg-opacity-100 text-green-600 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
               title="الخدمات"
@@ -1314,7 +1346,7 @@ export default function CaptainApp() {
               </svg>
             </button>
 
-            <button 
+            <button
               onClick={() => updateZoneRadius(zoneRadius + 0.1)}
               className="bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-800 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
               title="تكبير الخريطة"
@@ -1323,8 +1355,8 @@ export default function CaptainApp() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             </button>
-            
-            <button 
+
+            <button
               onClick={() => updateZoneRadius(zoneRadius - 0.1)}
               className="bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-800 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
               title="تصغير الخريطة"
@@ -1338,7 +1370,7 @@ export default function CaptainApp() {
 
         {/* Dynamic Components */}
         {showProfile && (
-          <DynamicProfileMenu 
+          <DynamicProfileMenu
             profile={profile}
             onClose={() => setShowProfile(false)}
             onShowServices={() => setShowServices(true)}
@@ -1350,11 +1382,11 @@ export default function CaptainApp() {
               setShowLastOrders(true);
               setShowProfile(false);
             }}
-            onvertioal_order={() =>{
+            onvertioal_order={() => {
               openOrderDetails(1);
               setShowProfile(false)
             }}
-            onlogout_btn={()=> sendToKotlin("logout", "")}
+            onlogout_btn={() => sendToKotlin("logout", "")}
             onShowChangePassword={() => {
               setShowChangePassword(true);
               setShowProfile(false); // إغلاق قائمة البروفايل عند فتح نافذة تغيير كلمة المرور
@@ -1404,7 +1436,7 @@ export default function CaptainApp() {
               clearRoute();
             }}
             onAccept={() => handleAcceptOrder("cap_accept")}
-            acceptStatus={acceptOrderStatus} 
+            acceptStatus={acceptOrderStatus}
           />
         )}
 
@@ -1436,23 +1468,23 @@ export default function CaptainApp() {
           <div className="absolute inset-0 flex items-center justify-center z-40 backdrop-blur-md" dir="rtl">
             <div className="bg-white p-6 rounded-lg w-80 ">
               <h2 className="text-xl font-bold mb-4 text-center">لم يتم إنهاء آخر طلب</h2>
-              
+
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between">
                   <span className="font-semibold">المسافة المقطوعة:</span>
                   <span>{completedOrderData.real_km} كم</span>
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span className="font-semibold">الوقت المستغرق:</span>
                   <span>{completedOrderData.real_min} دقيقة</span>
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span className="font-semibold">التكلفة النهائية:</span>
                   <span>{completedOrderData.real_price} ل.س</span>
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span className="font-semibold">وقت الانتهاء:</span>
                   <span>
@@ -1474,7 +1506,7 @@ export default function CaptainApp() {
                 >
                   إلغاء
                 </button>
-                
+
                 <button
                   onClick={handleSubmitCompletedOrder}
                   disabled={acceptOrderStatus === 'loading'}
@@ -1501,11 +1533,11 @@ export default function CaptainApp() {
           <div className="absolute inset-0 flex items-center justify-center z-40 backdrop-blur-md">
             <div className="bg-white p-6 rounded-lg w-80 ">
               <h2 className="text-xl font-bold mb-4 text-right">تغيير كلمة المرور</h2>
-              
+
               {passwordError && (
                 <div className="mb-4 text-red-500 text-right">{passwordError}</div>
               )}
-              
+
               <div className="mb-4">
                 <label className="block text-right mb-2">كلمة المرور الحالية</label>
                 <input
@@ -1515,7 +1547,7 @@ export default function CaptainApp() {
                   className="w-full p-2 border rounded text-right"
                 />
               </div>
-              
+
               <div className="mb-4">
                 <label className="block text-right mb-2">كلمة المرور الجديدة</label>
                 <input
@@ -1525,7 +1557,7 @@ export default function CaptainApp() {
                   className="w-full p-2 border rounded text-right"
                 />
               </div>
-              
+
               <div className="mb-4">
                 <label className="block text-right mb-2">تأكيد كلمة المرور الجديدة</label>
                 <input
@@ -1535,7 +1567,7 @@ export default function CaptainApp() {
                   className="w-full p-2 border rounded text-right"
                 />
               </div>
-              
+
               <div className="flex justify-between">
                 <button
                   onClick={() => {
