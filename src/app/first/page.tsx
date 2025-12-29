@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef } from "react";
 import { FiMenu, FiX, FiArrowLeft } from "react-icons/fi";
 import { fetchTrips as fetchTripsApi, fetchServices as fetchServicesApi } from "./UserApi";
+import "../cap/native-styles.css";
 
 interface Trip {
   id: number;
@@ -136,7 +137,7 @@ export default function HomePage() {
       e.preventDefault();
       alert("نسخ النصوص غير مسموح به");
     };
-    
+
     document.addEventListener('copy', handleCopy);
     return () => document.removeEventListener('copy', handleCopy);
   }, []);
@@ -165,7 +166,7 @@ export default function HomePage() {
 
   // اختيار الأيقونة واللون بناءً على نوع الخدمة
   const getServiceIconAndColor = (serviceName: string) => {
-    switch(serviceName) {
+    switch (serviceName) {
       case 'نقل ركاب':
         return { icon: '🚗', color: 'bg-blue-100' };
       case 'توصيل طلبات':
@@ -183,20 +184,20 @@ export default function HomePage() {
 
   // فتح الخريطة في صفحة جديدة
   const handleServiceClick = (serviceId: number) => {
-  // إنشاء كائن يحتوي البيانات
-  const serviceData = {
-    service_id: serviceId,
-    user_id: 1, // أو أي قيمة user_id
-    timestamp: Date.now() // لإضافة طبقة أمان إضافية
-  };
+    // إنشاء كائن يحتوي البيانات
+    const serviceData = {
+      service_id: serviceId,
+      user_id: 1, // أو أي قيمة user_id
+      timestamp: Date.now() // لإضافة طبقة أمان إضافية
+    };
 
-  // تخزين البيانات مشفرة
-  const encryptedData = btoa(JSON.stringify(serviceData));
-  localStorage.setItem('service_data', encryptedData);
-  
-  // الانتقال إلى صفحة الخريطة بدون معلمات
-  window.location.href = '/map';
-};
+    // تخزين البيانات مشفرة
+    const encryptedData = btoa(JSON.stringify(serviceData));
+    localStorage.setItem('service_data', encryptedData);
+
+    // الانتقال إلى صفحة الخريطة بدون معلمات
+    window.location.href = '/map';
+  };
 
   // بيانات وهمية للخدمات أثناء التحميل
   const dummyServices = [
@@ -216,7 +217,7 @@ export default function HomePage() {
       <header className="bg-yellow-400 p-4 shadow-md sticky top-0 z-40">
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-bold text-gray-800">بوصلة</h1>
-          <button 
+          <button
             onClick={toggleMenu}
             className="text-gray-800 p-1"
             aria-label="فتح القائمة"
@@ -227,11 +228,10 @@ export default function HomePage() {
       </header>
 
       {/* القائمة الجانبية */}
-      <div 
+      <div
         ref={menuRef}
-        className={`fixed top-16 left-0 z-50 h-[calc(100vh-4rem)] transition-all duration-300 ease-in-out ${
-          menuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-full'
-        }`}
+        className={`fixed top-16 left-0 z-50 h-[calc(100vh-4rem)] transition-all duration-300 ease-in-out ${menuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-full'
+          }`}
       >
         <div className="w-64 h-full bg-white shadow-xl" dir="ltr">
           <div className="p-4 border-b border-gray-200 flex justify-between items-center">
@@ -272,14 +272,14 @@ export default function HomePage() {
       </div>
 
       <main className="p-4 pb-20" dir="rtl">
-        
+
         {/* قسم الخدمات المعدل */}
         <section className="mb-6">
           <h2 className="text-lg font-bold mb-3 text-gray-700">خدماتنا</h2>
           {servicesLoading ? (
             <div className="flex overflow-x-auto pb-2 scrollbar-hide gap-4 px-2" dir="rtl">
               {dummyServices.map((service) => (
-                <div 
+                <div
                   key={service.id}
                   className={`
                     flex-shrink-0 
@@ -314,7 +314,7 @@ export default function HomePage() {
                 .map((service) => {
                   const { icon, color } = getServiceIconAndColor(service.ser_name);
                   return (
-                    <div 
+                    <div
                       key={service.id}
                       onClick={() => handleServiceClick(service.id)}
                       className={`
@@ -350,27 +350,27 @@ export default function HomePage() {
                         before:pointer-events-none
                         cursor-pointer
                       `}
-                      style={{ 
+                      style={{
                         userSelect: 'none',
                       }}
                     >
                       {/* تأثير ثلاثي الأبعاد */}
                       <div className="absolute inset-0 rounded-xl border-t-2 border-l-2 border-white/30 pointer-events-none"></div>
-                      
-                      <span 
+
+                      <span
                         className="text-3xl mb-2 z-10"
                         style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
                       >
                         {icon}
                       </span>
-                      
-                      <span 
+
+                      <span
                         className="text-sm font-bold text-center z-10 px-1"
                         style={{ textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
                       >
                         {service.ser_name}
                       </span>
-                      
+
                       {/* تأثير الضوء */}
                       <div className="absolute top-0 right-0 w-12 h-12 bg-white/10 rounded-full filter blur-sm"></div>
                     </div>
@@ -388,8 +388,8 @@ export default function HomePage() {
             <h2 className="text-lg font-bold text-gray-700">
               الرحلات الجارية{Array(loadingDots).fill('.').join('')}
             </h2>
-            <button 
-              onClick={() => fetchTrips()} 
+            <button
+              onClick={() => fetchTrips()}
               className="text-yellow-600 text-sm hover:text-yellow-700 active:scale-95 transition-transform"
               disabled={loading}
             >
@@ -416,11 +416,11 @@ export default function HomePage() {
                     <span className="text-blue-700">المسافة: {trip.distance}</span>
                     <span className="text-red-500">
                       حالة الرحلة: {
-                        trip.status === 'new_order' ? 'بإنتظار الكابتن' : 
-                        trip.status === 'start' ? 'قيد التنفيذ' : 
-                        trip.status === 'pending' ? 'قيد الانتظار' : 
-                        trip.status === 'end' ? 'منتهية' : 
-                        trip.status
+                        trip.status === 'new_order' ? 'بإنتظار الكابتن' :
+                          trip.status === 'start' ? 'قيد التنفيذ' :
+                            trip.status === 'pending' ? 'قيد الانتظار' :
+                              trip.status === 'end' ? 'منتهية' :
+                                trip.status
                       }
                     </span>
                   </div>
@@ -437,7 +437,7 @@ export default function HomePage() {
           <h2 className="text-lg font-bold mb-3 text-gray-700">العروض</h2>
           <div className="relative h-40 overflow-hidden rounded-xl">
             {ads.map((ad, index) => (
-              <div 
+              <div
                 key={ad.id}
                 className={`absolute top-0 left-0 w-full h-full ${ad.bg} flex items-center justify-center text-white font-bold text-xl
                   transition-opacity duration-500 ease-in-out
