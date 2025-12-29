@@ -6,6 +6,7 @@ import { Suspense } from 'react';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
 import 'react-toastify/dist/ReactToastify.css';
+import './native-styles.css';
 import { toast } from 'react-toastify';
 import {
   Order, OrderDetails, Payment, Service, Position,
@@ -1219,13 +1220,14 @@ export default function CaptainApp() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
+    <div className="fixed inset-0 w-full h-full overflow-hidden bg-gray-50">
       {/* Header */}
-      <header className="bg-blue-600 text-white p-4 flex justify-between items-center">
+      <header className="fixed top-0 left-0 right-0 bg-blue-600 text-white px-4 py-3 flex justify-between items-center elevation-2 safe-area-top z-50">
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setShowProfile(true)}
-            className="text-xl mr-2"
+            className="text-2xl mr-2 p-2 ripple rounded-full active:bg-blue-700"
+            aria-label="القائمة"
           >
             ☰
           </button>
@@ -1234,7 +1236,7 @@ export default function CaptainApp() {
         <h1 className="text-xl font-bold">كابتن بوصلة</h1>
 
         <div className="flex items-center">
-          <span className={`text-sm mr-2 ${active ? "text-white-600" : "text-gray-300"}`}>
+          <span className={`text-sm mr-2 ${active ? "text-white" : "text-gray-200"}`}>
             {active ? "نشط" : "غير نشط"}
           </span>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -1250,313 +1252,311 @@ export default function CaptainApp() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 relative">
-        {/* Map */}
-        <div className="absolute inset-0 z-0">
-          {menusLoaded ? (
-            <Suspense fallback={<div className="h-full w-full bg-gray-100 flex items-center justify-center">
-              <div className="text-gray-500">جاري تحميل الخريطة...</div>
-            </div>}>
-              <MapContainer
+      {/* Map Container - Full Screen */}
+      <div className="absolute top-14 left-0 right-0 bottom-0 overflow-hidden z-0">
+        {menusLoaded ? (
+          <Suspense fallback={<div className="h-full w-full bg-gray-100 flex items-center justify-center">
+            <div className="text-gray-500">جاري تحميل الخريطة...</div>
+          </div>}>
+            <MapContainer
+              center={currentLocation || DEFAULT_POSITION}
+              zoom={mapZoom}
+              style={{ height: '100%', width: '100%' }}
+              zoomControl={false}
+              ref={mapRef}
+            >
+              <MapComponent
                 center={currentLocation || DEFAULT_POSITION}
                 zoom={mapZoom}
-                style={{ height: '100%', width: '100%' }}
-                zoomControl={false}
-                ref={mapRef}
-              >
-                <MapComponent
-                  center={currentLocation || DEFAULT_POSITION}
-                  zoom={mapZoom}
-                  routePoints={routePoints}
-                  markers={[
-                    ...markers,
-                    ...(carMarker ? [{
-                      position: carMarker.position,
-                      icon: carMarker.icon,
-                      popup: "موقعك الحالي"
-                    }] : [])
-                  ]}
-                  circleCenter={circleCenter}
-                  circleRadius={circleRadius}
-                  radiusText={radiusText}
-                  activeRoute={activeRoute ? activeRoute.points : []}
-                />
-              </MapContainer>
-            </Suspense>
-          ) : (
-            <div className="h-full w-full bg-gray-100 flex items-center justify-center">
-              <div className="text-gray-500">جاري تحميل الخدمات الأساسية...</div>
-            </div>
-          )}
+                routePoints={routePoints}
+                markers={[
+                  ...markers,
+                  ...(carMarker ? [{
+                    position: carMarker.position,
+                    icon: carMarker.icon,
+                    popup: "موقعك الحالي"
+                  }] : [])
+                ]}
+                circleCenter={circleCenter}
+                circleRadius={circleRadius}
+                radiusText={radiusText}
+                activeRoute={activeRoute ? activeRoute.points : []}
+              />
+            </MapContainer>
+          </Suspense>
+        ) : (
+          <div className="h-full w-full bg-gray-100 flex items-center justify-center">
+            <div className="text-gray-500">جاري تحميل الخدمات الأساسية...</div>
+          </div>
+        )}
+      </div>
+
+      {/* Floating Action Buttons */}
+      {menusLoaded && (
+        <div className="absolute right-4 bottom-20 flex flex-col space-y-3 z-10">
+          <button
+            onClick={handleMyLocation}
+            className="bg-white bg-opacity-80 hover:bg-opacity-100 text-blue-600 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
+            title="الموقع الحالي"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+
+          <button
+            onClick={() => setShowServices(true)}
+            className="bg-white bg-opacity-80 hover:bg-opacity-100 text-green-600 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
+            title="الخدمات"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+            </svg>
+          </button>
+
+          <button
+            onClick={() => updateZoneRadius(zoneRadius + 0.1)}
+            className="bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-800 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
+            title="تكبير الخريطة"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </button>
+
+          <button
+            onClick={() => updateZoneRadius(zoneRadius - 0.1)}
+            className="bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-800 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
+            title="تصغير الخريطة"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+            </svg>
+          </button>
         </div>
+      )}
 
-        {/* Floating Action Buttons */}
-        {menusLoaded && (
-          <div className="absolute right-4 bottom-20 flex flex-col space-y-3 z-10">
-            <button
-              onClick={handleMyLocation}
-              className="bg-white bg-opacity-80 hover:bg-opacity-100 text-blue-600 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
-              title="الموقع الحالي"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </button>
+      {/* Dynamic Components */}
+      {showProfile && (
+        <DynamicProfileMenu
+          profile={profile}
+          onClose={() => setShowProfile(false)}
+          onShowServices={() => setShowServices(true)}
+          onShowPayments={() => {
+            setShowPayments(true);
+            setShowProfile(false);
+          }}
+          onShowLastOrders={() => {
+            setShowLastOrders(true);
+            setShowProfile(false);
+          }}
+          onvertioal_order={() => {
+            openOrderDetails(1);
+            setShowProfile(false)
+          }}
+          onlogout_btn={() => sendToKotlin("logout", "")}
+          onShowChangePassword={() => {
+            setShowChangePassword(true);
+            setShowProfile(false); // إغلاق قائمة البروفايل عند فتح نافذة تغيير كلمة المرور
+          }}
+        />
+      )}
 
-            <button
-              onClick={() => setShowServices(true)}
-              className="bg-white bg-opacity-80 hover:bg-opacity-100 text-green-600 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
-              title="الخدمات"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-              </svg>
-            </button>
+      {showPayments && (
+        <DynamicPaymentsMenu
+          payments={filteredPayments}
+          availableMonths={availableMonths}
+          filterMonth={filterMonth}
+          isRefreshing={isRefreshingPayments}
+          onClose={() => setShowPayments(false)}
+          onRefresh={fetchPayments}
+          onFilterMonth={setFilterMonth}
+        />
+      )}
 
-            <button
-              onClick={() => updateZoneRadius(zoneRadius + 0.1)}
-              className="bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-800 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
-              title="تكبير الخريطة"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-            </button>
+      {showServices && (
+        <DynamicServicesMenu
+          services={services}
+          isUpdatingService={isUpdatingService}
+          isRefreshing={isRefreshingServices}
+          onClose={() => setShowServices(false)}
+          onRefresh={handleRefreshServices}
+          onToggleService={handleServiceToggle}
+        />
+      )}
 
-            <button
-              onClick={() => updateZoneRadius(zoneRadius - 0.1)}
-              className="bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-800 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
-              title="تصغير الخريطة"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-              </svg>
-            </button>
-          </div>
-        )}
+      {showLastOrders && (
+        <DynamicLastOrdersMenu
+          orders={lastorder}
+          isRefreshing={isRefreshingLastOrders}
+          onClose={() => setShowLastOrders(false)}
+          onRefresh={handleRefreshLastOrders}
+          onOrderClick={openOrderDetails}
+        />
+      )}
 
-        {/* Dynamic Components */}
-        {showProfile && (
-          <DynamicProfileMenu
-            profile={profile}
-            onClose={() => setShowProfile(false)}
-            onShowServices={() => setShowServices(true)}
-            onShowPayments={() => {
-              setShowPayments(true);
-              setShowProfile(false);
-            }}
-            onShowLastOrders={() => {
-              setShowLastOrders(true);
-              setShowProfile(false);
-            }}
-            onvertioal_order={() => {
-              openOrderDetails(1);
-              setShowProfile(false)
-            }}
-            onlogout_btn={() => sendToKotlin("logout", "")}
-            onShowChangePassword={() => {
-              setShowChangePassword(true);
-              setShowProfile(false); // إغلاق قائمة البروفايل عند فتح نافذة تغيير كلمة المرور
-            }}
+      {showOrderDetails && selectedOrder && (
+        <OrderDetailsModal
+          order={selectedOrder}
+          onClose={() => {
+            setShowOrderDetails(false);
+            setAcceptOrderStatus('idle');
+            clearRoute();
+          }}
+          onAccept={() => handleAcceptOrder("cap_accept")}
+          acceptStatus={acceptOrderStatus}
+        />
+      )}
+
+      {showMessage && (
+        <BetterLuckMessage onClose={() => setShowMessage(false)} />
+      )}
+
+      {showOrderTracking && trackingOrder && (
+        <div className="fixed bottom-0 left-0 right-0 z-50">
+          <OrderTrackingModal
+            order={trackingOrder}
+            trackingData={trackingData}
+            initialStatus={trackingOrder.status} // تمرير حالة الطلب من البيانات
+            onNextStatus={handleNextStatus}
+            onCallCustomer={handleCallCustomer}
+            onPokeCustomer={handlePokeCustomer}
+            onCallCompany={handleCallCompany}
+            onCallEmergency={handleCallEmergency}
+            onOpenYandex={handleOpenYandex}
+            onStartRouteTracking={() => sendToKotlin("start_route_tracking", trackingOrder.id.toString())}
+            onPauseRouteTracking={() => sendToKotlin("pause_route_tracking", trackingOrder.id.toString())}
+            onStopRouteTracking={stopRouteTracking}
           />
-        )}
+        </div>
+      )}
 
-        {showPayments && (
-          <DynamicPaymentsMenu
-            payments={filteredPayments}
-            availableMonths={availableMonths}
-            filterMonth={filterMonth}
-            isRefreshing={isRefreshingPayments}
-            onClose={() => setShowPayments(false)}
-            onRefresh={fetchPayments}
-            onFilterMonth={setFilterMonth}
-          />
-        )}
+      {/* واجهة ارسال الطلب المعلق */}
+      {completedOrderData && (
+        <div className="absolute inset-0 flex items-center justify-center z-40 backdrop-blur-md" dir="rtl">
+          <div className="bg-white p-6 rounded-lg w-80 ">
+            <h2 className="text-xl font-bold mb-4 text-center">لم يتم إنهاء آخر طلب</h2>
 
-        {showServices && (
-          <DynamicServicesMenu
-            services={services}
-            isUpdatingService={isUpdatingService}
-            isRefreshing={isRefreshingServices}
-            onClose={() => setShowServices(false)}
-            onRefresh={handleRefreshServices}
-            onToggleService={handleServiceToggle}
-          />
-        )}
-
-        {showLastOrders && (
-          <DynamicLastOrdersMenu
-            orders={lastorder}
-            isRefreshing={isRefreshingLastOrders}
-            onClose={() => setShowLastOrders(false)}
-            onRefresh={handleRefreshLastOrders}
-            onOrderClick={openOrderDetails}
-          />
-        )}
-
-        {showOrderDetails && selectedOrder && (
-          <OrderDetailsModal
-            order={selectedOrder}
-            onClose={() => {
-              setShowOrderDetails(false);
-              setAcceptOrderStatus('idle');
-              clearRoute();
-            }}
-            onAccept={() => handleAcceptOrder("cap_accept")}
-            acceptStatus={acceptOrderStatus}
-          />
-        )}
-
-        {showMessage && (
-          <BetterLuckMessage onClose={() => setShowMessage(false)} />
-        )}
-
-        {showOrderTracking && trackingOrder && (
-          <div className="fixed bottom-0 left-0 right-0 z-50">
-            <OrderTrackingModal
-              order={trackingOrder}
-              trackingData={trackingData}
-              initialStatus={trackingOrder.status} // تمرير حالة الطلب من البيانات
-              onNextStatus={handleNextStatus}
-              onCallCustomer={handleCallCustomer}
-              onPokeCustomer={handlePokeCustomer}
-              onCallCompany={handleCallCompany}
-              onCallEmergency={handleCallEmergency}
-              onOpenYandex={handleOpenYandex}
-              onStartRouteTracking={() => sendToKotlin("start_route_tracking", trackingOrder.id.toString())}
-              onPauseRouteTracking={() => sendToKotlin("pause_route_tracking", trackingOrder.id.toString())}
-              onStopRouteTracking={stopRouteTracking}
-            />
-          </div>
-        )}
-
-        {/* واجهة ارسال الطلب المعلق */}
-        {completedOrderData && (
-          <div className="absolute inset-0 flex items-center justify-center z-40 backdrop-blur-md" dir="rtl">
-            <div className="bg-white p-6 rounded-lg w-80 ">
-              <h2 className="text-xl font-bold mb-4 text-center">لم يتم إنهاء آخر طلب</h2>
-
-              <div className="space-y-3 mb-4">
-                <div className="flex justify-between">
-                  <span className="font-semibold">المسافة المقطوعة:</span>
-                  <span>{completedOrderData.real_km} كم</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="font-semibold">الوقت المستغرق:</span>
-                  <span>{completedOrderData.real_min} دقيقة</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="font-semibold">التكلفة النهائية:</span>
-                  <span>{completedOrderData.real_price} ل.س</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="font-semibold">وقت الانتهاء:</span>
-                  <span>
-                    {new Date(completedOrderData.end_time).toLocaleDateString('en-GB', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex justify-between gap-3">
-                <button
-                  onClick={() => setCompletedOrderData(null)}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 rounded hover:bg-gray-400"
-                >
-                  إلغاء
-                </button>
-
-                <button
-                  onClick={handleSubmitCompletedOrder}
-                  disabled={acceptOrderStatus === 'loading'}
-                  className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400 flex items-center justify-center"
-                >
-                  {acceptOrderStatus === 'loading' ? (
-                    <div className="flex items-center">
-                      <svg className="animate-spin h-5 w-5 ml-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      جاري الإرسال...
-                    </div>
-                  ) : (
-                    'إرسال التحديث'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showChangePassword && (
-          <div className="absolute inset-0 flex items-center justify-center z-40 backdrop-blur-md">
-            <div className="bg-white p-6 rounded-lg w-80 ">
-              <h2 className="text-xl font-bold mb-4 text-right">تغيير كلمة المرور</h2>
-
-              {passwordError && (
-                <div className="mb-4 text-red-500 text-right">{passwordError}</div>
-              )}
-
-              <div className="mb-4">
-                <label className="block text-right mb-2">كلمة المرور الحالية</label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full p-2 border rounded text-right"
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-right mb-2">كلمة المرور الجديدة</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full p-2 border rounded text-right"
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-right mb-2">تأكيد كلمة المرور الجديدة</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full p-2 border rounded text-right"
-                />
+            <div className="space-y-3 mb-4">
+              <div className="flex justify-between">
+                <span className="font-semibold">المسافة المقطوعة:</span>
+                <span>{completedOrderData.real_km} كم</span>
               </div>
 
               <div className="flex justify-between">
-                <button
-                  onClick={() => {
-                    setShowChangePassword(false);
-                    setPasswordError('');
-                  }}
-                  className="px-4 py-2 bg-gray-300 rounded"
-                >
-                  إلغاء
-                </button>
-                <button
-                  onClick={handleChangePassword}
-                  className="px-4 py-2 bg-blue-600 text-white rounded"
-                >
-                  حفظ التغييرات
-                </button>
+                <span className="font-semibold">الوقت المستغرق:</span>
+                <span>{completedOrderData.real_min} دقيقة</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="font-semibold">التكلفة النهائية:</span>
+                <span>{completedOrderData.real_price} ل.س</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="font-semibold">وقت الانتهاء:</span>
+                <span>
+                  {new Date(completedOrderData.end_time).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </span>
               </div>
             </div>
+
+            <div className="flex justify-between gap-3">
+              <button
+                onClick={() => setCompletedOrderData(null)}
+                className="flex-1 bg-gray-300 text-gray-700 py-2 rounded hover:bg-gray-400"
+              >
+                إلغاء
+              </button>
+
+              <button
+                onClick={handleSubmitCompletedOrder}
+                disabled={acceptOrderStatus === 'loading'}
+                className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400 flex items-center justify-center"
+              >
+                {acceptOrderStatus === 'loading' ? (
+                  <div className="flex items-center">
+                    <svg className="animate-spin h-5 w-5 ml-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    جاري الإرسال...
+                  </div>
+                ) : (
+                  'إرسال التحديث'
+                )}
+              </button>
+            </div>
           </div>
-        )}
-      </main>
-    </div>
+        </div>
+      )}
+
+      {showChangePassword && (
+        <div className="absolute inset-0 flex items-center justify-center z-40 backdrop-blur-md">
+          <div className="bg-white p-6 rounded-lg w-80 ">
+            <h2 className="text-xl font-bold mb-4 text-right">تغيير كلمة المرور</h2>
+
+            {passwordError && (
+              <div className="mb-4 text-red-500 text-right">{passwordError}</div>
+            )}
+
+            <div className="mb-4">
+              <label className="block text-right mb-2">كلمة المرور الحالية</label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full p-2 border rounded text-right"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-right mb-2">كلمة المرور الجديدة</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full p-2 border rounded text-right"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-right mb-2">تأكيد كلمة المرور الجديدة</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full p-2 border rounded text-right"
+              />
+            </div>
+
+            <div className="flex justify-between">
+              <button
+                onClick={() => {
+                  setShowChangePassword(false);
+                  setPasswordError('');
+                }}
+                className="px-4 py-2 bg-gray-300 rounded"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleChangePassword}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                حفظ التغييرات
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div >
   );
 };
