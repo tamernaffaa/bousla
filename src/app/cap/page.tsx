@@ -1186,6 +1186,20 @@ export default function CaptainApp() {
       if (!success) {
         throw new Error('Failed to update service status');
       }
+
+      // إشعار Flutter بتحديث كاش الخدمات
+      if (typeof window !== 'undefined' && (window as any).Android) {
+        try {
+          const message = JSON.stringify({
+            action: 'refresh_services_cache',
+            captain_id: captainId
+          });
+          (window as any).Android.postMessage(message);
+          console.log('Notified Flutter to refresh services cache');
+        } catch (e) {
+          console.error('Failed to notify Flutter:', e);
+        }
+      }
     } catch (error) {
       setServices(prev => prev.map(s =>
         s.id === service.id ? { ...s, active: originalActive } : s

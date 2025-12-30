@@ -614,6 +614,7 @@ const MapOnlyPage: React.FC = () => {
             action: 'order_created',
             data: {
               order_id: result.order_id,
+              ser_chi_id: chosenService.id, // إضافة رقم الخدمة
               start_point: `${startPoint.lat},${startPoint.lon}`,
               end_point: `${endPoint.lat},${endPoint.lon}`,
               user_id: userId,
