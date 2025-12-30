@@ -1,9 +1,7 @@
+"use client";
 // CaptainApp.tsx
-'use client';
-
 import dynamic from 'next/dynamic';
-import { Suspense } from 'react';
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Suspense, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
 import 'react-toastify/dist/ReactToastify.css';
 import './native-styles.css';
@@ -13,36 +11,11 @@ import {
   Profile, TrackingData, LastOrder, CaptainData, KotlinOrderData, OrderStatusResponse
 } from './types';
 import { createCustomIcon, decodePolyline, extractMunicipality, createCarIcon } from './mapUtils';
-import {
-  ordersApi,
-  servicesApi,
-  paymentsApi,
-  captainApi
-} from './api';
-import { OrderDetailsModal } from './OrderDetailsModal';
+import { captainApi, ordersApi, servicesApi, paymentsApi } from './api';
+import { ProfileMenu as DynamicProfileMenu } from './menu/ProfileMenu';
 import { BetterLuckMessage } from './BetterLuckMessage';
+import { OrderDetailsModal } from './OrderDetailsModal';
 import OrderTrackingModal from './OrderTrackingModal';
-
-// تحميل مكونات القوائم أولاً
-const DynamicProfileMenu = dynamic(
-  () => import('./menu/ProfileMenu').then((mod) => mod.ProfileMenu),
-  { ssr: false, loading: () => <div className="h-0 w-0" /> }
-);
-
-const DynamicPaymentsMenu = dynamic(
-  () => import('./menu/PaymentsMenu').then((mod) => mod.PaymentsMenu),
-  { ssr: false, loading: () => <div className="h-0 w-0" /> }
-);
-
-const DynamicServicesMenu = dynamic(
-  () => import('./menu/ServicesMenu').then((mod) => mod.ServicesMenu),
-  { ssr: false, loading: () => <div className="h-0 w-0" /> }
-);
-
-const DynamicLastOrdersMenu = dynamic(
-  () => import('./menu/LastOrdersMenu').then((mod) => mod.LastOrdersMenu),
-  { ssr: false, loading: () => <div className="h-0 w-0" /> }
-);
 
 // تحميل مكونات الخريطة بعد ذلك
 const MapContainer = dynamic(
@@ -155,13 +128,13 @@ export default function CaptainApp() {
   const [captainId, setCaptainId] = useState<number>(0);
   const [menusLoaded, setMenusLoaded] = useState(false);
 
-  // Swipe Logic for Opening Menu (Swipe Right from Left Edge)
+  // Swipe Logic for Opening Menu (Swipe Left from Right Edge - Arabic Layout)
   const [pageTouchStart, setPageTouchStart] = useState<number | null>(null);
   const [pageTouchEnd, setPageTouchEnd] = useState<number | null>(null);
 
   const onPageTouchStart = (e: React.TouchEvent) => {
-    // Only trigger if starting from the leftmost 15% of the screen
-    if (e.targetTouches[0].clientX < window.innerWidth * 0.15) {
+    // Only trigger if starting from the rightmost 15% of the screen
+    if (e.targetTouches[0].clientX > window.innerWidth * 0.85) {
       setPageTouchEnd(null);
       setPageTouchStart(e.targetTouches[0].clientX);
     } else {
@@ -178,9 +151,9 @@ export default function CaptainApp() {
   const onPageTouchEnd = () => {
     if (!pageTouchStart || !pageTouchEnd) return;
     const distance = pageTouchStart - pageTouchEnd;
-    const isSwipeRight = distance < -50; // Swiping Right (Negative difference: End > Start)
+    const isSwipeLeft = distance > 50; // Swiping Left (Start > End, moving towards left)
 
-    if (isSwipeRight) {
+    if (isSwipeLeft) {
       setShowProfile(true);
     }
     setPageTouchStart(null);

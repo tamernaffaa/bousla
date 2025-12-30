@@ -216,10 +216,12 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" style={{ direction: 'rtl' }}>
-      <div className="absolute inset-0 bg-black bg-opacity-20 transition-opacity" onClick={onClose} />
+    <div className="fixed inset-0 z-50" style={{ direction: 'ltr' }}>
+      {/* خلفية سوداء شفافة */}
+        <div className="absolute left-0 right-0 transition-opacity" style={{top: '4rem', height: 'calc(100vh - 4rem)', backgroundColor: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(8px)'}} onClick={onClose} />
+      {/* القائمة الجانبية */}
       <div
-        className="relative w-3/4 max-w-xs bg-white h-full shadow-2xl flex flex-col animate-slide-in-right"
+        className="fixed left-0 top-16 w-3/4 max-w-xs bg-white h-[calc(100vh-4rem)] shadow-2xl flex flex-col animate-slide-in-left z-50"
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
       >
         {/* Header */}

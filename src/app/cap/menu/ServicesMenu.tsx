@@ -23,8 +23,11 @@ export const ServicesMenu: React.FC<ServicesMenuProps> = ({
   onToggleService
 }) => {
   return (
-    <div className="absolute top-0 left-0 h-full w-3/4 max-w-sm bg-white z-40 shadow-xl">
-      <div className="h-full flex flex-col">
+    <div className="fixed inset-0 z-50" dir="ltr">
+      {/* خلفية سوداء شفافة */}
+      <div className="absolute left-0 right-0 transition-opacity" style={{top: '4rem', height: 'calc(100vh - 4rem)', backgroundColor: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(8px)'}} onClick={onClose} />
+      {/* القائمة الجانبية */}
+      <div className="fixed left-0 top-16 w-3/4 max-w-sm bg-white h-[calc(100vh-4rem)] shadow-xl flex flex-col animate-slide-in-left z-50">
         <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
           <div className="flex items-center">
             <button 

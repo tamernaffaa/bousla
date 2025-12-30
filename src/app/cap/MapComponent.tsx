@@ -25,6 +25,7 @@ interface MapComponentProps {
   circleRadius?: number;
   radiusText?: {position: Position, text: string} | null;
   activeRoute?: Position[]; // إضافة خاصية جديدة للمسار النشط
+  // onMapClick?: () => void;
 }
 
 // مكون لعرض نص نصف القطر
@@ -66,6 +67,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   circleRadius,
   radiusText,
   activeRoute = [], // قيمة افتراضية
+  // onMapClick,
 }) => {
   const [isClient, setIsClient] = useState(false);
   const [markerIcons, setMarkerIcons] = useState<{[key: string]: L.Icon}>({});
