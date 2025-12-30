@@ -1382,60 +1382,45 @@ export default function CaptainApp() {
         <DynamicProfileMenu
           profile={profile}
           onClose={() => setShowProfile(false)}
-          onShowServices={() => setShowServices(true)}
-          onShowPayments={() => {
-            setShowPayments(true);
+
+          // Services
+          services={services}
+          isUpdatingService={isUpdatingService}
+          isRefreshingServices={isRefreshingServices}
+          onRefreshServices={handleRefreshServices}
+          onToggleService={handleServiceToggle}
+
+          // Payments
+          payments={filteredPayments}
+          availableMonths={availableMonths}
+          filterMonth={filterMonth}
+          isRefreshingPayments={isRefreshingPayments}
+          onRefreshPayments={fetchPayments}
+          onFilterMonth={setFilterMonth}
+
+          // Last Orders
+          lastOrders={lastorder}
+          isRefreshingLastOrders={isRefreshingLastOrders}
+          onRefreshLastOrders={handleRefreshLastOrders}
+          onOrderClick={(id) => {
+            openOrderDetails(id);
             setShowProfile(false);
           }}
-          onShowLastOrders={() => {
-            setShowLastOrders(true);
-            setShowProfile(false);
-          }}
+
+          // Actions
           onvertioal_order={() => {
             openOrderDetails(1);
-            setShowProfile(false)
+            setShowProfile(false);
           }}
           onlogout_btn={() => sendToKotlin("logout", "")}
           onShowChangePassword={() => {
             setShowChangePassword(true);
-            setShowProfile(false); // إغلاق قائمة البروفايل عند فتح نافذة تغيير كلمة المرور
+            setShowProfile(false);
           }}
         />
       )}
 
-      {showPayments && (
-        <DynamicPaymentsMenu
-          payments={filteredPayments}
-          availableMonths={availableMonths}
-          filterMonth={filterMonth}
-          isRefreshing={isRefreshingPayments}
-          onClose={() => setShowPayments(false)}
-          onRefresh={fetchPayments}
-          onFilterMonth={setFilterMonth}
-        />
-      )}
-
-      {showServices && (
-        <DynamicServicesMenu
-          services={services}
-          isUpdatingService={isUpdatingService}
-          isRefreshing={isRefreshingServices}
-          onClose={() => setShowServices(false)}
-          onRefresh={handleRefreshServices}
-          onToggleService={handleServiceToggle}
-        />
-      )}
-
-      {showLastOrders && (
-        <DynamicLastOrdersMenu
-          orders={lastorder}
-          isRefreshing={isRefreshingLastOrders}
-          onClose={() => setShowLastOrders(false)}
-          onRefresh={handleRefreshLastOrders}
-          onOrderClick={openOrderDetails}
-        />
-      )}
-
+      {/* Other Modals (Order Details, etc) */}
       {showOrderDetails && selectedOrder && (
         <OrderDetailsModal
           order={selectedOrder}
