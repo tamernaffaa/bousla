@@ -1371,7 +1371,7 @@ export default function CaptainApp() {
 
       {/* Edge Swipe Trigger Zone */}
       <div
-        className="fixed top-0 left-0 w-8 h-full z-40"
+        className="fixed top-0 right-0 w-8 h-full z-40"
         onTouchStart={onPageTouchStart}
         onTouchMove={onPageTouchMove}
         onTouchEnd={onPageTouchEnd}
