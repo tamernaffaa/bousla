@@ -216,10 +216,10 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" style={{ direction: 'rtl' }}>
-      <div className="absolute inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex justify-start" style={{ direction: 'rtl' }}>
+      <div className="absolute inset-0 bg-black bg-opacity-30 transition-opacity" onClick={onClose} />
       <div
-        className="relative w-3/4 max-w-xs bg-white h-full shadow-2xl flex flex-col animate-slide-in-right"
+        className="relative w-3/4 max-w-xs bg-white h-full shadow-2xl flex flex-col animate-slide-in-left"
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
       >
         {/* Header */}

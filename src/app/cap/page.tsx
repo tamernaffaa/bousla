@@ -155,13 +155,13 @@ export default function CaptainApp() {
   const [captainId, setCaptainId] = useState<number>(0);
   const [menusLoaded, setMenusLoaded] = useState(false);
 
-  // Swipe Logic for Opening Menu (Swipe Left from Right Edge)
+  // Swipe Logic for Opening Menu (Swipe Right from Left Edge)
   const [pageTouchStart, setPageTouchStart] = useState<number | null>(null);
   const [pageTouchEnd, setPageTouchEnd] = useState<number | null>(null);
 
   const onPageTouchStart = (e: React.TouchEvent) => {
-    // Only trigger if starting from the rightmost 15% of the screen
-    if (e.targetTouches[0].clientX > window.innerWidth * 0.85) {
+    // Only trigger if starting from the leftmost 15% of the screen
+    if (e.targetTouches[0].clientX < window.innerWidth * 0.15) {
       setPageTouchEnd(null);
       setPageTouchStart(e.targetTouches[0].clientX);
     } else {
@@ -178,9 +178,9 @@ export default function CaptainApp() {
   const onPageTouchEnd = () => {
     if (!pageTouchStart || !pageTouchEnd) return;
     const distance = pageTouchStart - pageTouchEnd;
-    const isSwipeLeft = distance > 50; // Swiping Left (Positive difference: Start > End)
+    const isSwipeRight = distance < -50; // Swiping Right (Negative difference: End > Start)
 
-    if (isSwipeLeft) {
+    if (isSwipeRight) {
       setShowProfile(true);
     }
     setPageTouchStart(null);
@@ -1371,7 +1371,7 @@ export default function CaptainApp() {
 
       {/* Edge Swipe Trigger Zone */}
       <div
-        className="fixed top-0 right-0 w-8 h-full z-40"
+        className="fixed top-0 left-0 w-8 h-full z-40"
         onTouchStart={onPageTouchStart}
         onTouchMove={onPageTouchMove}
         onTouchEnd={onPageTouchEnd}

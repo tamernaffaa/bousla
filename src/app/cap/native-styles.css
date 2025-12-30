@@ -191,6 +191,21 @@ html {
     animation: slideInRight 0.3s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
 }
 
+/* Slide from Left Animation (for Arabic layout) */
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+.animate-slide-in-left {
+    animation: slideInLeft 0.3s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+}
+
 /* Ripple Effect Improvements */
 .ripple {
     position: relative;
