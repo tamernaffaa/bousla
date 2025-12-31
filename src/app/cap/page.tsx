@@ -10,6 +10,7 @@ import {
   Order, OrderDetails, Payment, Service, Position,
   Profile, TrackingData, LastOrder, CaptainData, KotlinOrderData, OrderStatusResponse
 } from './types';
+import { FaUser, FaBars, FaSearch, FaMapMarkerAlt, FaChevronUp, FaPowerOff, FaCompass, FaPlus, FaMinus, FaLayerGroup } from 'react-icons/fa';
 import { createCustomIcon, decodePolyline, extractMunicipality, createCarIcon } from './mapUtils';
 import { supabase } from '../../lib/supabaseClient';
 import { captainApi, ordersApi, servicesApi, paymentsApi } from './api';
@@ -141,6 +142,8 @@ export default function CaptainApp() {
     orderId: number;
     points: Position[];
   } | null>(null);
+
+  const [isSheetMinimized, setIsSheetMinimized] = useState(false);
 
   const mapRef = useRef<L.Map | null>(null);
   const [radiusText, setRadiusText] = useState<{ position: Position, text: string } | null>(null);
@@ -1312,44 +1315,12 @@ export default function CaptainApp() {
   };
 
   return (
-    <div className="fixed inset-0 w-full h-full overflow-hidden bg-gray-50">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-blue-600 text-white px-4 py-3 flex justify-between items-center elevation-2 safe-area-top z-50">
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setShowProfile(true)}
-            className="text-2xl mr-2 p-2 ripple rounded-full active:bg-blue-700"
-            aria-label="القائمة"
-          >
-            ☰
-          </button>
-        </div>
+    <div className="fixed inset-0 w-full h-full bg-gray-100 font-sans" dir="rtl">
 
-        <h1 className="text-xl font-bold">كابتن بوصلة</h1>
-
-        <div className="flex items-center">
-          <span className={`text-sm mr-2 ${active ? "text-white" : "text-gray-200"}`}>
-            {active ? "نشط" : "غير نشط"}
-          </span>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={active}
-              onChange={handleActivate}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-          </label>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      {/* Map Container - Full Screen */}
-      <div className="absolute top-14 left-0 right-0 bottom-0 overflow-hidden z-0">
+      {/* 🗺️ MAP LAYER (Full Screen) */}
+      <div className="absolute inset-0 z-0 h-full w-full">
         {menusLoaded ? (
-          <Suspense fallback={<div className="h-full w-full bg-gray-100 flex items-center justify-center">
-            <div className="text-gray-500">جاري تحميل الخريطة...</div>
-          </div>}>
+          <Suspense fallback={<div className="h-full w-full bg-gray-200 animate-pulse" />}>
             <MapContainer
               center={currentLocation || DEFAULT_POSITION}
               zoom={mapZoom}
@@ -1377,57 +1348,121 @@ export default function CaptainApp() {
             </MapContainer>
           </Suspense>
         ) : (
-          <div className="h-full w-full bg-gray-100 flex items-center justify-center">
-            <div className="text-gray-500">جاري تحميل الخدمات الأساسية...</div>
+          <div className="h-full w-full bg-gray-200 flex items-center justify-center">
+            <span className="text-gray-400 font-bold">جاري تحميل الخريطة...</span>
           </div>
         )}
       </div>
 
-      {/* Floating Action Buttons */}
-      {menusLoaded && (
-        <div className="absolute right-4 bottom-20 flex flex-col space-y-3 z-10">
-          <button
-            onClick={handleMyLocation}
-            className="bg-white bg-opacity-80 hover:bg-opacity-100 text-blue-600 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
-            title="الموقع الحالي"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
-
-          <button
-            onClick={() => setShowServices(true)}
-            className="bg-white bg-opacity-80 hover:bg-opacity-100 text-green-600 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
-            title="الخدمات"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-            </svg>
-          </button>
-
-          <button
-            onClick={() => updateZoneRadius(zoneRadius + 0.1)}
-            className="bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-800 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
-            title="تكبير الخريطة"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          </button>
-
-          <button
-            onClick={() => updateZoneRadius(zoneRadius - 0.1)}
-            className="bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-800 p-3 rounded-full shadow-lg flex items-center justify-center transition-all"
-            title="تصغير الخريطة"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-            </svg>
-          </button>
+      {/* 🔝 TOP FLOATING BAR */}
+      <div className="absolute top-0 left-0 right-0 p-4 z-20 flex justify-between items-start safe-area-top pointer-events-none">
+        {/* Earnings Pill (Left) */}
+        <div className="pointer-events-auto bg-black text-white px-5 py-2 rounded-full shadow-lg flex flex-col items-center min-w-[100px]">
+          <span className="text-xs text-gray-400 font-bold">اليوم</span>
+          <span className="text-xl font-bold font-mono">{(totalRewards + 15000).toLocaleString()} ل.س</span>
         </div>
-      )}
+
+        {/* Status Badge (Center) - Only show if online */}
+        {active && (
+          <div className="bg-black/80 backdrop-blur-md text-yellow-400 px-4 py-1 rounded-full text-sm font-bold shadow-md animate-pulse">
+            🟢 أنت متصل
+          </div>
+        )}
+
+        {/* Profile/Menu Button (Right) */}
+        <button
+          onClick={() => setShowProfile(true)}
+          className="pointer-events-auto bg-white p-3 rounded-full shadow-lg hover:bg-gray-50 transition-transform active:scale-95 relative"
+        >
+          {profile.photo ? (
+            <img src={profile.photo} alt="Profile" className="w-6 h-6 rounded-full object-cover" />
+          ) : (
+            <FaBars className="text-xl text-black" />
+          )}
+          {/* Notification Dot */}
+          <div className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></div>
+        </button>
+      </div>
+
+      {/* 🎮 MAP CONTROLS (Right Side) - Moved UP to avoid overlap */}
+      <div className="absolute right-4 top-32 flex flex-col gap-3 z-10 pointer-events-auto">
+        <button onClick={handleMyLocation} className="bg-white p-3 rounded-full shadow-lg text-gray-700 hover:text-black hover:bg-gray-50">
+          <FaCompass className="text-xl" />
+        </button>
+        <button onClick={() => updateZoneRadius(zoneRadius + 0.1)} className="bg-white p-3 rounded-full shadow-lg text-gray-700 hover:text-black hover:bg-gray-50">
+          <FaPlus />
+        </button>
+        <button onClick={() => updateZoneRadius(zoneRadius - 0.1)} className="bg-white p-3 rounded-full shadow-lg text-gray-700 hover:text-black hover:bg-gray-50">
+          <FaMinus />
+        </button>
+        <button onClick={() => setShowServices(true)} className="bg-white p-3 rounded-full shadow-lg text-gray-700 hover:text-black hover:bg-gray-50">
+          <FaLayerGroup />
+        </button>
+      </div>
+
+      {/* 🚀 BOTTOM PANEL (GO Button) */}
+      <div
+        className="absolute bottom-0 left-0 right-0 p-6 pb-8 bg-white rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-30 transition-all duration-500 ease-in-out"
+      >
+        {/* Handle Bar */}
+        <div
+          onClick={() => setIsSheetMinimized(!isSheetMinimized)}
+          className="w-full flex justify-center pb-4 cursor-pointer active:opacity-70"
+          role="button"
+          aria-label="Toggle Bottom Sheet"
+        >
+          <div className="w-12 h-1.5 bg-gray-200 rounded-full"></div>
+        </div>
+
+        {/* Content Container - Morphs from Col to Row */}
+        <div className={`flex transition-all duration-500 ${isSheetMinimized ? 'flex-row-reverse items-center justify-between gap-4' : 'flex-col items-center'}`}>
+
+          {/* 1. Status Text */}
+          <div className={`transition-all duration-500 ${isSheetMinimized ? 'text-right mb-0' : 'text-center mb-6 w-full'}`}>
+            {active ? (
+              <h3 className={`font-bold text-gray-700 animate-pulse ${isSheetMinimized ? 'text-sm' : 'text-xl'}`}>جاري البحث...</h3>
+            ) : (
+              <h3 className={`font-bold text-gray-400 ${isSheetMinimized ? 'text-sm' : 'text-base'}`}>غير متصل</h3>
+            )}
+          </div>
+
+          {/* 2. Main Button */}
+          <div className={`transition-all duration-500 ${isSheetMinimized ? 'w-auto' : 'w-full flex justify-center'}`}>
+            {active ? (
+              <button
+                onClick={handleActivate}
+                className={`bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${isSheetMinimized ? 'px-6 py-2 text-sm h-10' : 'w-full py-4 text-xl h-16'}`}
+              >
+                <FaPowerOff />
+                {!isSheetMinimized && <span>إيقاف العمل</span>}
+              </button>
+            ) : (
+              <button
+                onClick={handleActivate}
+                className={`bg-yellow-400 hover:bg-yellow-500 text-black font-black rounded-full shadow-xl transition-all active:scale-95 flex items-center justify-center ${isSheetMinimized ? 'w-12 h-12 text-sm' : 'w-24 h-24 text-2xl shadow-yellow-200 ring-4 ring-yellow-100'}`}
+              >
+                ابدأ
+              </button>
+            )}
+          </div>
+
+          {/* 3. Stats Row (Condensed in Minimized) */}
+          <div className={`transition-all duration-500 border-gray-100 ${isSheetMinimized ? 'border-none flex gap-4' : 'border-t mt-8 pt-6 w-full flex justify-between'}`}>
+            <div className={`text-center ${isSheetMinimized ? '' : 'flex-1 border-l border-gray-100'}`}>
+              <div className={`text-gray-400 font-bold ${isSheetMinimized ? 'text-[10px]' : 'text-xs mb-1'}`}>القبول</div>
+              <div className={`font-bold text-green-600 ${isSheetMinimized ? 'text-sm' : 'text-lg'}`}>95%</div>
+            </div>
+            <div className={`text-center ${isSheetMinimized ? '' : 'flex-1 border-l border-gray-100'}`}>
+              <div className={`text-gray-400 font-bold ${isSheetMinimized ? 'text-[10px]' : 'text-xs mb-1'}`}>التقييم</div>
+              <div className={`font-bold text-black ${isSheetMinimized ? 'text-sm' : 'text-lg'}`}>4.9</div>
+            </div>
+            <div className={`text-center ${isSheetMinimized ? '' : 'flex-1'}`}>
+              <div className={`text-gray-400 font-bold ${isSheetMinimized ? 'text-[10px]' : 'text-xs mb-1'}`}>الرحلات</div>
+              <div className={`font-bold text-black ${isSheetMinimized ? 'text-sm' : 'text-lg'}`}>12</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Edge Swipe Trigger Zone */}
       <div
@@ -1437,58 +1472,37 @@ export default function CaptainApp() {
         onTouchEnd={onPageTouchEnd}
       />
 
-      {/* Dynamic Components */}
-
+      {/* 📱 MODALS & DYNAMIC CONTENT */}
       {showProfile && (
         <DynamicProfileMenu
           profile={profile}
           onClose={() => setShowProfile(false)}
-
-          // Services
           services={services}
           isUpdatingService={isUpdatingService}
           isRefreshingServices={isRefreshingServices}
           onRefreshServices={handleRefreshServices}
           onToggleService={handleServiceToggle}
-
-          // Payments
           payments={filteredPayments}
           availableMonths={availableMonths}
           filterMonth={filterMonth}
           isRefreshingPayments={isRefreshingPayments}
           onRefreshPayments={fetchPayments}
           onFilterMonth={setFilterMonth}
-
-          // Rewards (NEW)
           rewards={rewards}
           totalRewards={totalRewards}
           isRefreshingRewards={isRefreshingRewards}
           onRefreshRewards={fetchRewards}
-
-          // Last Orders
           lastOrders={lastorder}
           isRefreshingLastOrders={isRefreshingLastOrders}
           onRefreshLastOrders={handleRefreshLastOrders}
-          onOrderClick={(id) => {
-            openOrderDetails(id);
-            setShowProfile(false);
-          }}
-
-
-          // Actions
-          onvertioal_order={() => {
-            openOrderDetails(1);
-            setShowProfile(false);
-          }}
+          onOrderClick={(id) => { openOrderDetails(id); setShowProfile(false); }}
+          onvertioal_order={() => { openOrderDetails(1); setShowProfile(false); }}
           onlogout_btn={() => sendToKotlin("logout", "")}
-          onShowChangePassword={() => {
-            setShowChangePassword(true);
-            setShowProfile(false);
-          }}
+          onShowChangePassword={() => { setShowChangePassword(true); setShowProfile(false); }}
         />
       )}
 
-      {/* Other Modals (Order Details, etc) */}
+      {/* Order Details Modal */}
       {showOrderDetails && selectedOrder && (
         <OrderDetailsModal
           order={selectedOrder}
@@ -1502,16 +1516,14 @@ export default function CaptainApp() {
         />
       )}
 
-      {showMessage && (
-        <BetterLuckMessage onClose={() => setShowMessage(false)} />
-      )}
+      {showMessage && <BetterLuckMessage onClose={() => setShowMessage(false)} />}
 
       {showOrderTracking && trackingOrder && (
         <div className="fixed bottom-0 left-0 right-0 z-50">
           <OrderTrackingModal
             order={trackingOrder}
             trackingData={trackingData}
-            initialStatus={trackingOrder.status} // تمرير حالة الطلب من البيانات
+            initialStatus={trackingOrder.status}
             onNextStatus={handleNextStatus}
             onCallCustomer={handleCallCustomer}
             onPokeCustomer={handlePokeCustomer}
@@ -1525,131 +1537,47 @@ export default function CaptainApp() {
         </div>
       )}
 
-      {/* واجهة ارسال الطلب المعلق */}
+      {/* Pending Completion Modal */}
       {completedOrderData && (
-        <div className="absolute inset-0 flex items-center justify-center z-40 backdrop-blur-md" dir="rtl">
-          <div className="bg-white p-6 rounded-lg w-80 ">
+        <div className="absolute inset-0 flex items-center justify-center z-40 backdrop-blur-md bg-black/20" dir="rtl">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl w-80">
             <h2 className="text-xl font-bold mb-4 text-center">لم يتم إنهاء آخر طلب</h2>
-
-            <div className="space-y-3 mb-4">
-              <div className="flex justify-between">
-                <span className="font-semibold">المسافة المقطوعة:</span>
-                <span>{completedOrderData.real_km} كم</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="font-semibold">الوقت المستغرق:</span>
-                <span>{completedOrderData.real_min} دقيقة</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="font-semibold">التكلفة النهائية:</span>
-                <span>{completedOrderData.real_price} ل.س</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="font-semibold">وقت الانتهاء:</span>
-                <span>
-                  {new Date(completedOrderData.end_time).toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </span>
-              </div>
+            <div className="space-y-3 mb-6 bg-gray-50 p-4 rounded-xl text-sm">
+              <div className="flex justify-between"><span className="text-gray-500">المسافة:</span><span className="font-bold">{completedOrderData.real_km} كم</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">الوقت:</span><span className="font-bold">{completedOrderData.real_min} د</span></div>
+              <div className="flex justify-between border-t pt-2 mt-2"><span className="text-gray-800 font-bold">التكلفة:</span><span className="font-black text-yellow-600">{completedOrderData.real_price} ل.س</span></div>
             </div>
-
-            <div className="flex justify-between gap-3">
-              <button
-                onClick={() => setCompletedOrderData(null)}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 rounded hover:bg-gray-400"
-              >
-                إلغاء
-              </button>
-
-              <button
-                onClick={handleSubmitCompletedOrder}
-                disabled={acceptOrderStatus === 'loading'}
-                className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400 flex items-center justify-center"
-              >
-                {acceptOrderStatus === 'loading' ? (
-                  <div className="flex items-center">
-                    <svg className="animate-spin h-5 w-5 ml-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    جاري الإرسال...
-                  </div>
-                ) : (
-                  'إرسال التحديث'
-                )}
+            <div className="flex gap-3">
+              <button onClick={() => setCompletedOrderData(null)} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold hover:bg-gray-200">إلغاء</button>
+              <button onClick={handleSubmitCompletedOrder} disabled={acceptOrderStatus === 'loading'} className="flex-1 bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 flex justify-center items-center">
+                {acceptOrderStatus === 'loading' ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'إرسال'}
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Change Password Modal */}
       {showChangePassword && (
-        <div className="absolute inset-0 flex items-center justify-center z-40 backdrop-blur-md">
-          <div className="bg-white p-6 rounded-lg w-80 ">
+        <div className="absolute inset-0 flex items-center justify-center z-40 backdrop-blur-md bg-black/20">
+          <div className="bg-white p-6 rounded-2xl w-80 shadow-2xl">
             <h2 className="text-xl font-bold mb-4 text-right">تغيير كلمة المرور</h2>
+            {passwordError && <div className="mb-4 text-sm text-red-500 text-right bg-red-50 p-2 rounded">{passwordError}</div>}
 
-            {passwordError && (
-              <div className="mb-4 text-red-500 text-right">{passwordError}</div>
-            )}
-
-            <div className="mb-4">
-              <label className="block text-right mb-2">كلمة المرور الحالية</label>
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full p-2 border rounded text-right"
-              />
+            <div className="space-y-4">
+              <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="كلمة المرور الحالية" className="w-full p-3 bg-gray-50 rounded-xl text-right outline-none focus:ring-2 focus:ring-yellow-400" />
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="كلمة المرور الجديدة" className="w-full p-3 bg-gray-50 rounded-xl text-right outline-none focus:ring-2 focus:ring-yellow-400" />
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="تأكيد كلمة المرور" className="w-full p-3 bg-gray-50 rounded-xl text-right outline-none focus:ring-2 focus:ring-yellow-400" />
             </div>
 
-            <div className="mb-4">
-              <label className="block text-right mb-2">كلمة المرور الجديدة</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full p-2 border rounded text-right"
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-right mb-2">تأكيد كلمة المرور الجديدة</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full p-2 border rounded text-right"
-              />
-            </div>
-
-            <div className="flex justify-between">
-              <button
-                onClick={() => {
-                  setShowChangePassword(false);
-                  setPasswordError('');
-                }}
-                className="px-4 py-2 bg-gray-300 rounded"
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={handleChangePassword}
-                className="px-4 py-2 bg-blue-600 text-white rounded"
-              >
-                حفظ التغييرات
-              </button>
+            <div className="flex justify-between mt-6 gap-3">
+              <button onClick={() => { setShowChangePassword(false); setPasswordError(''); }} className="flex-1 py-3 bg-gray-100 rounded-xl font-bold text-gray-600">إلغاء</button>
+              <button onClick={handleChangePassword} className="flex-1 py-3 bg-yellow-400 text-black rounded-xl font-bold hover:bg-yellow-500">حفظ</button>
             </div>
           </div>
         </div>
       )}
-    </div >
+
+    </div>
   );
 };
