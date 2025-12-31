@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { supabase } from '../../../lib/supabaseClient'
 import { useSearchParams } from 'next/navigation'
 
-export default function CaptainRewardsPage() {
+function CaptainRewardsContent() {
     const searchParams = useSearchParams()
     const userId = searchParams.get('user_id')
 
@@ -15,6 +15,8 @@ export default function CaptainRewardsPage() {
     useEffect(() => {
         if (userId) {
             fetchRewards()
+        } else {
+            setLoading(false)
         }
     }, [userId])
 
@@ -122,5 +124,17 @@ export default function CaptainRewardsPage() {
                 </div>
             )}
         </div>
+    )
+}
+
+export default function CaptainRewardsPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+            </div>
+        }>
+            <CaptainRewardsContent />
+        </Suspense>
     )
 }
