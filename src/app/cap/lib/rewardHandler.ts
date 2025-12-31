@@ -1,5 +1,5 @@
 
-import { supabase } from '@/lib/supabase'
+import { supabase } from '../api'
 import { validatePromotionConstraints } from '@/lib/geoUtils'
 import { OrderDetails } from '../types'
 
