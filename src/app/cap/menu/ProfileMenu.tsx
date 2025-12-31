@@ -22,6 +22,11 @@ interface ProfileMenuProps {
   isRefreshingPayments: boolean;
   onRefreshPayments: () => void;
   onFilterMonth: (month: string | null) => void;
+  // Rewards Data
+  rewards: any[];
+  totalRewards: number;
+  isRefreshingRewards: boolean;
+  onRefreshRewards: () => void;
   // Last Orders Data
   lastOrders: LastOrder[];
   isRefreshingLastOrders: boolean;
@@ -33,13 +38,14 @@ interface ProfileMenuProps {
   onShowChangePassword: () => void;
 }
 
-type MenuView = 'main' | 'services' | 'payments' | 'history';
+type MenuView = 'main' | 'services' | 'payments' | 'history' | 'rewards';
 
 export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   profile,
   onClose,
   services, isUpdatingService, isRefreshingServices, onRefreshServices, onToggleService,
   payments, availableMonths, filterMonth, isRefreshingPayments, onRefreshPayments, onFilterMonth,
+  rewards, totalRewards, isRefreshingRewards, onRefreshRewards,
   lastOrders, isRefreshingLastOrders, onRefreshLastOrders, onOrderClick,
   onvertioal_order,
   onlogout_btn,
@@ -163,6 +169,55 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
     );
   };
 
+  const renderRewards = () => (
+    <div className="space-y-4">
+      {/* إجمالي المكافآت */}
+      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg p-6 mb-4 text-white shadow-lg">
+        <p className="text-sm opacity-90">إجمالي مكافآتك</p>
+        <p className="text-4xl font-bold">{totalRewards.toFixed(0)} ل.س</p>
+        <p className="text-xs opacity-75 mt-2">المكافآت المكتسبة من العروض الترويجية</p>
+      </div>
+
+      <h3 className="font-bold text-gray-800">العروض المتاحة</h3>
+      {rewards.length === 0 ? (
+        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-100">
+          لا توجد عروض متاحة حالياً
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {rewards.map(reward => (
+            <div key={reward.id} className="bg-white rounded-lg border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-800">{reward.name}</h4>
+                  <p className="text-sm text-gray-500 mt-1 lines-clamp-2">
+                    {reward.description_ar || reward.description}
+                  </p>
+                </div>
+                <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold whitespace-nowrap mr-2">
+                  +{reward.value}
+                </span>
+              </div>
+
+              {/* القيود */}
+              <div className="flex flex-wrap gap-1 mt-2">
+                {reward.zone_ids && reward.zone_ids.length > 0 && (
+                  <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px]">📍 {reward.zone_ids.length} منطقة</span>
+                )}
+                {reward.time_start && (
+                  <span className="bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-[10px]">⏰ {reward.time_start.slice(0, 5)}</span>
+                )}
+              </div>
+              <div className="mt-2 pt-2 border-t border-gray-50 text-[10px] text-gray-400">
+                ينتهي: {new Date(reward.end_date).toLocaleDateString('ar-SA')}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   const renderHistory = () => {
     // Simplification: Using specific filter logic inside LastOrdersMenu locally would be better, 
     // but for this refactor I will implement a basic view of the passed 'lastOrders' list.
@@ -211,6 +266,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
       case 'services': return 'تعديل خدماتي';
       case 'payments': return 'دفعاتي';
       case 'history': return 'الطلبات السابقة';
+      case 'rewards': return 'المكافآت والحوافز';
       default: return '';
     }
   };
@@ -250,6 +306,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
               {currentView === 'services' && <Icons.Refresh loading={isRefreshingServices} onClick={onRefreshServices} />}
               {currentView === 'payments' && <Icons.Refresh loading={isRefreshingPayments} onClick={onRefreshPayments} />}
               {currentView === 'history' && <Icons.Refresh loading={isRefreshingLastOrders} onClick={onRefreshLastOrders} />}
+              {currentView === 'rewards' && <Icons.Refresh loading={isRefreshingRewards} onClick={onRefreshRewards} />}
             </div>
           )}
         </div>
@@ -268,11 +325,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
                 <Icons.History /><span className="text-gray-800 text-base font-medium flex-1 text-right mr-3">الطلبات السابقة</span><Icons.ChevronLeft />
               </button>
               <button
-                onClick={() => {
-                  const params = new URLSearchParams(window.location.search);
-                  const userId = params.get('user_id') || '1';
-                  window.location.href = `/cap/rewards?user_id=${userId}`;
-                }}
+                onClick={() => setCurrentView('rewards')}
                 className="w-full flex items-center p-4 hover:bg-gray-50 active:bg-yellow-50 transition-colors ripple"
               >
                 <svg className="w-6 h-6 text-yellow-500 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,6 +351,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
             {currentView === 'services' && renderServices()}
             {currentView === 'payments' && renderPayments()}
             {currentView === 'history' && renderHistory()}
+            {currentView === 'rewards' && renderRewards()}
           </div>
         </div>
       </div>

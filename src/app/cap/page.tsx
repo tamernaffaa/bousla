@@ -11,6 +11,7 @@ import {
   Profile, TrackingData, LastOrder, CaptainData, KotlinOrderData, OrderStatusResponse
 } from './types';
 import { createCustomIcon, decodePolyline, extractMunicipality, createCarIcon } from './mapUtils';
+import { supabase } from '../../lib/supabaseClient';
 import { captainApi, ordersApi, servicesApi, paymentsApi } from './api';
 import { ProfileMenu as DynamicProfileMenu } from './menu/ProfileMenu';
 import { BetterLuckMessage } from './BetterLuckMessage';
@@ -178,6 +179,52 @@ export default function CaptainApp() {
     real_price: string;
     end_time: string;
   } | null>(null);
+
+  // Rewards Data
+  const [rewards, setRewards] = useState<any[]>([]);
+  const [totalRewards, setTotalRewards] = useState(0);
+  const [isRefreshingRewards, setIsRefreshingRewards] = useState(false);
+
+  // تعريف دالة fetchRewards في النطاق العلوي للمكون
+  const fetchRewards = useCallback(async () => {
+    try {
+      setIsRefreshingRewards(true);
+      // جلب العروض من نوع captain_reward
+      const { data: promotions } = await supabase
+        .from('promotions')
+        .select('*')
+        .eq('type', 'captain_reward')
+        .eq('active', true)
+        .gte('end_date', new Date().toISOString());
+
+      setRewards(promotions || []);
+
+      if (captainId) {
+        // حساب إجمالي المكافآت المكتسبة
+        const { data: usage } = await supabase
+          .from('promotion_usage')
+          .select('discount_amount')
+          .eq('captain_id', captainId);
+
+        const total = usage?.reduce((sum, u) => sum + u.discount_amount, 0) || 0;
+        setTotalRewards(total);
+      }
+    } catch (error) {
+      console.error('Error fetching rewards:', error);
+    } finally {
+      setIsRefreshingRewards(false);
+    }
+  }, [captainId]); // إضافة captainId كتبعية
+
+  useEffect(() => {
+    if (captainId) {
+      fetchRewards();
+    }
+  }, [captainId, fetchRewards]); // إضافة fetchRewards كتبعية
+
+
+
+
 
   // استقبال بيانات الكابتن
   useEffect(() => {
@@ -1188,6 +1235,42 @@ export default function CaptainApp() {
     };
   }, [clearRoute, stopRouteTracking]);
 
+  // ايقاف او تشغيل الخدمات
+  // ... (previous logic around here) ...
+
+  // Handle Back Button from Android
+  useEffect(() => {
+    // Define the global function for Android to call
+    window.handleBackButton = () => {
+      // 1. If Profile/Side Menu is open, close it
+      if (showProfile) {
+        setShowProfile(false);
+        return true; // We handled the back button
+      }
+
+      // 2. If Order Tracking is open but we want to close it? (Usually valid to keep it)
+      // Maybe if OrderDetailsModal is open?
+      if (showOrderDetails) {
+        setShowOrderDetails(false);
+        setSelectedOrder(null);
+        return true;
+      }
+
+      if (showChangePassword) {
+        setShowChangePassword(false);
+        return true;
+      }
+
+      // 3. Not handled, let Android do its default behavior (go back or exit)
+      return false;
+    };
+
+    return () => {
+      // Cleanup if needed, though mostly persistent
+      window.handleBackButton = undefined;
+    };
+  }, [showProfile, showOrderDetails, showChangePassword]);
+
   //ايقاف او تشغيل الخدمات
   const handleServiceToggle = useCallback(async (service: Service) => {
     const newActive = service.active === false ? true : false;
@@ -1381,6 +1464,7 @@ export default function CaptainApp() {
       />
 
       {/* Dynamic Components */}
+
       {showProfile && (
         <DynamicProfileMenu
           profile={profile}
@@ -1401,6 +1485,12 @@ export default function CaptainApp() {
           onRefreshPayments={fetchPayments}
           onFilterMonth={setFilterMonth}
 
+          // Rewards (NEW)
+          rewards={rewards}
+          totalRewards={totalRewards}
+          isRefreshingRewards={isRefreshingRewards}
+          onRefreshRewards={fetchRewards}
+
           // Last Orders
           lastOrders={lastorder}
           isRefreshingLastOrders={isRefreshingLastOrders}
@@ -1409,6 +1499,7 @@ export default function CaptainApp() {
             openOrderDetails(id);
             setShowProfile(false);
           }}
+
 
           // Actions
           onvertioal_order={() => {

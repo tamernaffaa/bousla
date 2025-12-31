@@ -40,11 +40,11 @@ export interface Order {
   start_time?: string;
 }
 
-export type OrderDetails = Pick<Order, 
-  'id' | 'ser_chi_id' | 'start_text' | 'end_text' | 'distance_km' | 
-  'duration_min' | 'cost' | 'user_rate' | 'start_detlis' | 'end_detlis' | 
+export type OrderDetails = Pick<Order,
+  'id' | 'ser_chi_id' | 'start_text' | 'end_text' | 'distance_km' |
+  'duration_min' | 'cost' | 'user_rate' | 'start_detlis' | 'end_detlis' |
   'notes' | 'discount' | 'km_price' | 'min_price' | 'add1' | 'f_km' |
-  'start_time' | 'status' | 'real_km' | 'real_min' | 'real_price' | 
+  'start_time' | 'status' | 'real_km' | 'real_min' | 'real_price' |
   'real_street' | 'waiting_min' | 'end_time' | 'start_point' | 'end_point'
 >;
 
@@ -158,4 +158,19 @@ export interface OrderStatusResponse {
   status: 'success' | 'goodluck' | 'error';
   message?: string;
   current_captain_id?: number;
+}
+
+declare global {
+  interface Window {
+    handleBackButton?: () => boolean;
+    handleNewOrder?: (orderId: number) => void;
+    onOrderUpdate?: (order: any) => void;
+    updateLocation?: (lat: number, lng: number) => void;
+    update_cost?: (km: string, min: string, cost: string) => void;
+    updateOrderLocation?: (orderId: number, lat: number, lng: number) => void;
+    Android?: {
+      receiveMessage: (action: string, message: string) => void;
+      postMessage: (message: string) => void;
+    }
+  }
 }
