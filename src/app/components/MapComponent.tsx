@@ -24,17 +24,10 @@ interface MapComponentProps {
   locations?: MapLocation[];
   isSelectingOnMap?: boolean;
   onSelectLocation?: (lat: number, lon: number) => void;
-}
-
-interface MapClickHandlerProps {
-  active: boolean;
-  onSelect: (lat: number, lon: number) => void;
-}
-
-interface RouteAndLocationUpdaterProps {
-  routes: Route[];
-  locations: MapLocation[];
-  initialCoordinates: [number, number];
+  // New props for convenience
+  startPoint?: { lat: number; lon: number; name: string } | null;
+  endPoint?: { lat: number; lon: number; name: string } | null;
+  routeCoordinates?: [number, number][];
 }
 
 // إنشاء أيقونات مخصصة
@@ -55,38 +48,49 @@ const startIcon = createCustomIcon('red');
 const endIcon = createCustomIcon('green');
 const defaultIcon = createCustomIcon('blue');
 
+interface MapClickHandlerProps {
+  active: boolean;
+  onSelect: (lat: number, lon: number) => void;
+}
+
+interface RouteAndLocationUpdaterProps {
+  routes: Route[];
+  locations: MapLocation[];
+  initialCoordinates: [number, number];
+}
+
 // مكون معالج النقر على الخريطة
 const MapClickHandler: React.FC<MapClickHandlerProps> = ({ active, onSelect }) => {
   const map = useMap();
-  
+
   useEffect(() => {
     if (!active || !map) return;
-  
+
     const handleClick = (e: L.LeafletMouseEvent) => {
       onSelect(e.latlng.lat, e.latlng.lng);
     };
-  
+
     map.on('click', handleClick);
-  
+
     return () => {
       map.off('click', handleClick);
     };
   }, [active, map, onSelect]);
-  
+
   return null;
 };
 
 // مكون تحديث المسار والموقع
-const RouteAndLocationUpdater: React.FC<RouteAndLocationUpdaterProps> = ({ 
-  routes, 
-  locations, 
-  initialCoordinates 
+const RouteAndLocationUpdater: React.FC<RouteAndLocationUpdaterProps> = ({
+  routes,
+  locations,
+  initialCoordinates
 }) => {
   const map = useMap();
 
   useEffect(() => {
     const allPoints: L.LatLngExpression[] = [
-      ...routes.flatMap(route => 
+      ...routes.flatMap(route =>
         route.coordinates ? route.coordinates.map(coord => [coord[0], coord[1]] as L.LatLngTuple) : []
       ),
       ...locations.filter(loc => loc.lat && loc.lon).map(loc => [loc.lat, loc.lon] as L.LatLngTuple)
@@ -110,18 +114,31 @@ const RouteAndLocationUpdater: React.FC<RouteAndLocationUpdaterProps> = ({
 };
 
 // المكون الرئيسي
-const MapComponent: React.FC<MapComponentProps> = ({ 
-  coordinates = [33.5138, 36.2765], 
-  routes = [], 
-  locations = [], 
-  isSelectingOnMap = false, 
-  onSelectLocation = () => {} 
+const MapComponent: React.FC<MapComponentProps> = ({
+  coordinates = [33.5138, 36.2765],
+  routes = [],
+  locations = [],
+  isSelectingOnMap = false,
+  onSelectLocation = () => { },
+  startPoint,
+  endPoint,
+  routeCoordinates
 }) => {
-  const validCoordinates: [number, number] = 
-    Array.isArray(coordinates) && 
-    coordinates.length === 2 && 
-    !isNaN(coordinates[0]) && 
-    !isNaN(coordinates[1])
+  // Merge new props into existing structures
+  const allLocations = [...locations];
+  if (startPoint) allLocations.push({ ...startPoint, isStartPoint: true });
+  if (endPoint) allLocations.push({ ...endPoint, isEndPoint: true });
+
+  const allRoutes = [...routes];
+  if (routeCoordinates && routeCoordinates.length > 0) {
+    allRoutes.push({ coordinates: routeCoordinates });
+  }
+
+  const validCoordinates: [number, number] =
+    Array.isArray(coordinates) &&
+      coordinates.length === 2 &&
+      !isNaN(coordinates[0]) &&
+      !isNaN(coordinates[1])
       ? [coordinates[0], coordinates[1]]
       : [33.5138, 36.2765];
 
@@ -131,9 +148,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   };
 
   return (
-    <MapContainer 
-      center={validCoordinates} 
-      zoom={13} 
+    <MapContainer
+      center={validCoordinates}
+      zoom={13}
       style={{ height: "100%", width: "100%" }}
       zoomControl={true}
     >
@@ -143,20 +160,20 @@ const MapComponent: React.FC<MapComponentProps> = ({
       />
 
       <MapClickHandler active={isSelectingOnMap} onSelect={onSelectLocation} />
-      <RouteAndLocationUpdater 
-        routes={routes} 
-        locations={locations} 
-        initialCoordinates={validCoordinates} 
+      <RouteAndLocationUpdater
+        routes={allRoutes}
+        locations={allLocations}
+        initialCoordinates={validCoordinates}
       />
 
-      {routes.map((route, index) => {
+      {allRoutes.map((route, index) => {
         const { coordinates } = route;
         if (!coordinates || !Array.isArray(coordinates) || coordinates.length < 2) {
           return null;
         }
 
         return (
-          <Polyline 
+          <Polyline
             key={`route-${index}`}
             positions={coordinates}
             color={getRouteColor(index)}
@@ -166,7 +183,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         );
       })}
 
-      {locations.map((location, index) => {
+      {allLocations.map((location, index) => {
         if (!location.lat || !location.lon || isNaN(location.lat) || isNaN(location.lon)) {
           return null;
         }

@@ -133,65 +133,66 @@ export default function PromotionCodeInput({
         }
     }
 
+    const [isExpanded, setIsExpanded] = useState(false)
+
     const removePromotion = () => {
         setAppliedPromotion(null)
         setDiscount(0)
         setCode('')
         setError(null)
         onPromotionApplied(null)
+        setIsExpanded(false)
+    }
+
+    if (appliedPromotion) {
+        return (
+            <div className="flex items-center justify-between bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div className="text-sm">
+                        <span className="font-bold text-green-800 ml-1">{appliedPromotion.code}</span>
+                        <span className="text-green-700">(-{discount.toFixed(0)} ل.س)</span>
+                    </div>
+                </div>
+                <button onClick={removePromotion} className="text-gray-400 hover:text-red-500">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+        )
     }
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center gap-2 mb-3">
-                <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                </svg>
-                <h3 className="text-lg font-bold">كود الخصم</h3>
-            </div>
-
-            {appliedPromotion ? (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="font-bold text-green-900">{appliedPromotion.code}</p>
-                            <p className="text-sm text-green-700">خصم: {discount.toFixed(2)} ل.س</p>
-                            {appliedPromotion.description_ar && (
-                                <p className="text-xs text-green-600 mt-1">{appliedPromotion.description_ar}</p>
-                            )}
-                        </div>
-                        <button
-                            onClick={removePromotion}
-                            className="text-red-600 hover:text-red-800"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
+        <div className="w-full">
+            {!isExpanded ? (
+                <button
+                    onClick={() => setIsExpanded(true)}
+                    className="flex items-center gap-2 text-orange-600 font-medium text-sm hover:underline p-1"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    <span>لديك كود خصم؟</span>
+                </button>
             ) : (
-                <div>
+                <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
                     <div className="flex gap-2">
                         <input
                             type="text"
                             value={code}
                             onChange={(e) => setCode(e.target.value.toUpperCase())}
-                            placeholder="أدخل كود الخصم"
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                            disabled={loading}
+                            placeholder="KOD123"
+                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-500 outline-none"
+                            autoFocus
                         />
                         <button
                             onClick={validateAndApplyPromotion}
                             disabled={loading}
-                            className="px-6 py-2 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 bg-black text-white text-sm rounded-lg font-bold disabled:opacity-50"
                         >
-                            {loading ? 'جاري التحقق...' : 'تطبيق'}
+                            {loading ? '...' : 'تطبيق'}
                         </button>
                     </div>
-                    {error && (
-                        <p className="text-sm text-red-600 mt-2">{error}</p>
-                    )}
+                    {error && <p className="text-xs text-red-500 px-1">{error}</p>}
                 </div>
             )}
         </div>

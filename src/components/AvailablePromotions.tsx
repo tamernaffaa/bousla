@@ -147,89 +147,68 @@ export default function AvailablePromotions({
             <AnimatePresence>
                 {selectedPromotion && (
                     <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-green-50 rounded-xl border border-green-200 p-2.5 flex items-center justify-between"
                     >
-                        <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-2xl">🎉</span>
-                                    <h3 className="font-bold text-green-900">تم تطبيق العرض!</h3>
+                        <div className="flex items-center gap-3">
+                            <div className="bg-green-500 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-sm">
+                                <span className="text-sm">🎉</span>
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-green-900 text-sm">{selectedPromotion.code}</span>
+                                    <span className="bg-green-200 text-green-800 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                                        -{selectedPromotion.calculatedDiscount.toFixed(0)}
+                                    </span>
                                 </div>
-                                <p className="text-sm text-green-800 font-semibold">
-                                    {selectedPromotion.name}
-                                </p>
-                                <p className="text-xs text-green-700 mt-1">
+                                <p className="text-[10px] text-green-700 leading-tight mt-0.5 opacity-80">
                                     {selectedPromotion.description_ar || selectedPromotion.description}
                                 </p>
-                                <div className="mt-2 flex items-center gap-2">
-                                    <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                                        وفرت {selectedPromotion.calculatedDiscount.toFixed(0)} ل.س
-                                    </span>
-                                    <span className="text-xs text-green-600 font-mono">
-                                        {selectedPromotion.code}
-                                    </span>
-                                </div>
                             </div>
-                            <button
-                                onClick={removePromotion}
-                                className="text-green-600 hover:text-green-800 p-1"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
                         </div>
+                        <button
+                            onClick={removePromotion}
+                            className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-white rounded-full transition-all"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* العروض المتاحة الأخرى */}
             {!selectedPromotion && availablePromotions.length > 0 && (
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-4"
-                >
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className="text-2xl">✨</span>
-                        <h3 className="font-bold text-orange-900">عروض متاحة لك!</h3>
-                    </div>
-
-                    <div className="space-y-2">
-                        {availablePromotions.slice(0, 3).map((promo) => (
-                            <motion.button
-                                key={promo.id}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => applyPromotion(promo)}
-                                className="w-full bg-white border border-orange-200 rounded-lg p-3 text-right hover:border-orange-400 transition-colors"
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                        <p className="font-bold text-gray-900 text-sm">
-                                            {promo.name}
-                                        </p>
-                                        <p className="text-xs text-gray-600 mt-1">
-                                            {promo.description_ar || promo.description}
-                                        </p>
-                                    </div>
-                                    <div className="mr-3 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap">
-                                        وفر {promo.calculatedDiscount.toFixed(0)} ل.س
-                                    </div>
+                <div className="space-y-2 mt-2">
+                    {availablePromotions.slice(0, 3).map((promo) => (
+                        <motion.button
+                            key={promo.id}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => applyPromotion(promo)}
+                            className="w-full flex items-center justify-between bg-orange-50 border border-orange-100 rounded-lg p-2 hover:border-orange-300 transition-all text-right group"
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="text-lg grayscale group-hover:grayscale-0 transition-all">✨</span>
+                                <div>
+                                    <p className="font-bold text-gray-800 text-xs">{promo.name}</p>
+                                    <p className="text-[10px] text-gray-500">{promo.description_ar}</p>
                                 </div>
-                            </motion.button>
-                        ))}
-                    </div>
+                            </div>
+                            <div className="bg-white text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold border border-orange-100 shadow-sm">
+                                توفير {promo.calculatedDiscount.toFixed(0)}
+                            </div>
+                        </motion.button>
+                    ))}
 
                     {availablePromotions.length > 3 && (
-                        <p className="text-xs text-orange-600 mt-2 text-center">
-                            +{availablePromotions.length - 3} عروض أخرى متاحة
+                        <p className="text-[10px] text-gray-400 text-center">
+                            +{availablePromotions.length - 3} عروض إضافية
                         </p>
                     )}
-                </motion.div>
+                </div>
             )}
         </div>
     )

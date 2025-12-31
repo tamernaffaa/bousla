@@ -3,9 +3,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from "react";
-import { FiMenu, FiX, FiArrowLeft } from "react-icons/fi";
+import { FaBars, FaTimes, FaArrowLeft, FaMapMarkerAlt, FaSearch, FaStar, FaHistory, FaWallet, FaUser, FaCog, FaPercentage, FaPhoneAlt } from "react-icons/fa";
 import { fetchTrips as fetchTripsApi, fetchServices as fetchServicesApi } from "./UserApi";
+import { motion, AnimatePresence } from "framer-motion";
 import "../cap/native-styles.css";
+import Image from 'next/image';
 
 interface Trip {
   id: number;
@@ -22,7 +24,7 @@ interface Service {
   ser_name: string;
   note1: string;
   activ: number;
-  pro: number; //حقل ترتيب العرض
+  pro: number; // Order priority
 }
 
 interface RawTrip {
@@ -52,25 +54,16 @@ export default function HomePage() {
   const [servicesLoading, setServicesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [servicesError, setServicesError] = useState<string | null>(null);
-  const [loadingDots, setLoadingDots] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // بيانات الإعلانات
+  // Ads Data
   const ads = [
-    { id: 1, text: "خصم 20% على أول رحلة", bg: "bg-gradient-to-r from-yellow-400 to-orange-400" },
-    { id: 2, text: "اشتراك شهري بـ 100 ل.س فقط", bg: "bg-gradient-to-r from-blue-400 to-purple-400" },
-    { id: 3, text: "عروض خاصة للعملاء الدائمين", bg: "bg-gradient-to-r from-green-400 to-teal-400" },
+    { id: 1, text: "خصم 20% على أول رحلة", subtext: "استخدم كود: FIRST20", bg: "bg-teal-600" },
+    { id: 2, text: "اشتراك شهري مميز", subtext: "توفير بـ 100 ل.س", bg: "bg-indigo-600" },
+    { id: 3, text: "أكثر توفيراً مع بوصلة", subtext: "أسعار تنافسية دائماً", bg: "bg-yellow-500" },
   ];
 
-  // تأثير النقاط المتحركة
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLoadingDots((prev) => (prev + 1) % 4);
-    }, 500);
-    return () => clearInterval(interval);
-  }, []);
-
-  // دالة جلب الرحلات من Supabase
+  // Fetch Trips
   const fetchTrips = async () => {
     try {
       setLoading(true);
@@ -79,9 +72,9 @@ export default function HomePage() {
         id: trip.id || 0,
         from: trip.start_text || "موقع الانطلاق غير محدد",
         to: trip.end_text || "موقع الوصول غير محدد",
-        price: trip.cost !== null ? `قيمة الطلب: ${trip.cost} ل.س` : "يتم حساب السعر",
-        distance: trip.distance_km ? `${parseFloat(trip.distance_km).toFixed(1)} كم` : "المسافة غير محددة",
-        time: trip.duration_min ? `${trip.duration_min} دقائق` : "الوقت غير محدد",
+        price: trip.cost !== null ? `${trip.cost} ل.س` : "--",
+        distance: trip.distance_km ? `${parseFloat(trip.distance_km).toFixed(1)} كم` : "--",
+        time: trip.duration_min ? `${trip.duration_min} د` : "--",
         status: trip.status || "غير معروف"
       }));
       setTrips(formattedTrips);
@@ -93,7 +86,7 @@ export default function HomePage() {
     }
   };
 
-  // دالة جلب الخدمات من Supabase
+  // Fetch Services
   const fetchServices = async () => {
     try {
       setServicesLoading(true);
@@ -109,346 +102,277 @@ export default function HomePage() {
       setServices(formattedServices);
       setServicesLoading(false);
     } catch (err: unknown) {
-      setServicesError(
-        err instanceof Error ? err.message : 'حدث خطأ غير متوقع'
-      );
+      setServicesError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
       setServicesLoading(false);
-      console.error('Error details:', err);
     }
   };
 
-  // التحميل الأولي
+  // Initial Load
   useEffect(() => {
     fetchTrips();
     fetchServices();
-  }, []); // [] لضمان تنفيذ الدالة مرة واحدة فقط
+  }, []);
 
-  // تبديل الإعلانات تلقائياً
+  // Ads Rotator
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentAdIndex((prevIndex) => (prevIndex + 1) % ads.length);
-    }, 10000);
+    }, 5000); // Faster rotation
     return () => clearInterval(interval);
   }, [ads.length]);
 
-  // منع نسخ النصوص
+  // Handle Android Back Button for Menu
   useEffect(() => {
-    const handleCopy = (e: ClipboardEvent) => {
-      e.preventDefault();
-      alert("نسخ النصوص غير مسموح به");
+    const handlePopState = () => {
+      if (menuOpen) setMenuOpen(false);
     };
 
-    document.addEventListener('copy', handleCopy);
-    return () => document.removeEventListener('copy', handleCopy);
-  }, []);
-
-  // إغلاق القائمة عند النقر خارجها
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-
-    if (menuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [menuOpen]);
 
-  // تبديل حالة القائمة
-  const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
-  };
-
-  // اختيار الأيقونة واللون بناءً على نوع الخدمة
-  const getServiceIconAndColor = (serviceName: string) => {
-    switch (serviceName) {
-      case 'نقل ركاب':
-        return { icon: '🚗', color: 'bg-blue-100' };
-      case 'توصيل طلبات':
-        return { icon: '🏍', color: 'bg-green-100' };
-      case 'توصيل بضائع':
-        return { icon: '📦', color: 'bg-orange-100' };
-      case 'توصيل أدوية':
-        return { icon: '💊', color: 'bg-red-100' };
-      case 'توصيل طعام':
-        return { icon: '🍔', color: 'bg-green-100' };
-      default:
-        return { icon: '🚀', color: 'bg-gray-100' };
+  const openMenu = () => {
+    if (!menuOpen) {
+      window.history.pushState({ menu: true }, '');
+      setMenuOpen(true);
     }
   };
 
-  // فتح الخريطة في صفحة جديدة
+  const closeMenu = () => {
+    if (menuOpen) {
+      window.history.back();
+      // setMenuOpen(false) will happen in popstate
+    }
+  };
+
+  // Helper for Service Visuals
+  const getServiceVisuals = (serviceName: string) => {
+    // Uber-like mapping with custom icons/colors if needed
+    // Defaulting to a clean look
+    if (serviceName.includes('توصيل طلبات')) return { icon: '📦', bg: 'bg-green-50' };
+    if (serviceName.includes('نقل ركاب')) return { icon: '🚗', bg: 'bg-blue-50' };
+    if (serviceName.includes('أدوية')) return { icon: '💊', bg: 'bg-red-50' };
+    if (serviceName.includes('طعام')) return { icon: '🍔', bg: 'bg-orange-50' };
+    return { icon: '🚀', bg: 'bg-gray-50' };
+  };
+
+  // Navigate to Map
   const handleServiceClick = (serviceId: number) => {
-    // إنشاء كائن يحتوي البيانات
     const serviceData = {
       service_id: serviceId,
-      user_id: 1, // أو أي قيمة user_id
-      timestamp: Date.now() // لإضافة طبقة أمان إضافية
+      user_id: 1,
+      timestamp: Date.now()
     };
-
-    // تخزين البيانات مشفرة
     const encryptedData = btoa(JSON.stringify(serviceData));
     localStorage.setItem('service_data', encryptedData);
-
-    // الانتقال إلى صفحة الخريطة بدون معلمات
     window.location.href = '/map';
   };
 
-  // بيانات وهمية للخدمات أثناء التحميل
-  const dummyServices = [
-    { id: 1, ser_name: '...', color: 'bg-gray-200' },
-    { id: 2, ser_name: '...', color: 'bg-gray-200' },
-    { id: 3, ser_name: '...', color: 'bg-gray-200' },
-    { id: 4, ser_name: '...', color: 'bg-gray-200' },
-    { id: 5, ser_name: '...', color: 'bg-gray-200' }
-  ];
+  const handleGenericMapClick = () => {
+    // Just go to map without pre-selection
+    window.location.href = '/map';
+  }
+
+  // Dummy Loading Services
+  const dummyServices = [1, 2, 3, 4];
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
-      <title>بوصلة - تطبيق نقل الركاب</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <div className="h-screen bg-white font-sans text-gray-900 overflow-y-auto overflow-x-hidden" dir="rtl">
+      <title>بوصلة - الرئيسية</title>
 
-      {/* شريط العنوان */}
-      <header className="bg-yellow-400 p-4 shadow-md sticky top-0 z-40">
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-800">بوصلة</h1>
-          <button
-            onClick={toggleMenu}
-            className="text-gray-800 p-1"
-            aria-label="فتح القائمة"
-          >
-            {menuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
-          </button>
+      {/* HEADER */}
+      <header className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md z-40 px-4 py-3 flex justify-between items-center shadow-sm">
+        <div className="flex items-center gap-3">
+          {/* We can use an image logo here if available, or just text */}
+          <div className="bg-yellow-400 text-black font-black px-2 py-1 rounded text-xl tracking-tighter">B</div>
+          <h1 className="text-xl font-bold">بوصلة</h1>
         </div>
+        <button onClick={openMenu} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <FaBars size={20} className="text-gray-700" />
+        </button>
       </header>
 
-      {/* القائمة الجانبية */}
-      <div
-        ref={menuRef}
-        className={`fixed top-16 left-0 z-50 h-[calc(100vh-4rem)] transition-all duration-300 ease-in-out ${menuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-full'
-          }`}
-      >
-        <div className="w-64 h-full bg-white shadow-xl" dir="ltr">
-          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-            <button onClick={() => setMenuOpen(false)}>
-              <FiX size={20} />
-            </button>
-            <h2 className="font-bold">القائمة</h2>
-          </div>
-          <nav className="p-4 h-[calc(100%-3.5rem)] overflow-y-auto">
-            <ul className="space-y-4">
-              <li className="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-                <span>الملف الشخصي</span>
-                <FiArrowLeft />
-              </li>
-              <li className="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-                <span>المحفظة</span>
-                <FiArrowLeft />
-              </li>
-              <li className="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-                <span>الرحلات السابقة</span>
-                <FiArrowLeft />
-              </li>
-              <li className="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-                <span>عروض واكواد حسم</span>
-                <FiArrowLeft />
-              </li>
-              <li className="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-                <span>تواصل معنا</span>
-                <FiArrowLeft />
-              </li>
-              <li className="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-                <span>الإعدادات</span>
-                <FiArrowLeft />
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </div>
-
-      <main className="p-4 pb-20" dir="rtl">
-
-        {/* قسم الخدمات المعدل */}
-        <section className="mb-6">
-          <h2 className="text-lg font-bold mb-3 text-gray-700">خدماتنا</h2>
-          {servicesLoading ? (
-            <div className="flex overflow-x-auto pb-2 scrollbar-hide gap-4 px-2" dir="rtl">
-              {dummyServices.map((service) => (
-                <div
-                  key={service.id}
-                  className={`
-                    flex-shrink-0 
-                    ${service.color} 
-                    p-4 
-                    rounded-xl 
-                    w-28 
-                    h-32
-                    flex 
-                    flex-col 
-                    items-center 
-                    justify-center
-                    border-2 
-                    border-white
-                    shadow-[0_5px_15px_rgba(0,0,0,0.15)]
-                    relative
-                    overflow-hidden
-                    animate-pulse
-                  `}
-                >
-                  <div className="w-12 h-12 rounded-full bg-gray-300 mb-3"></div>
-                  <div className="w-20 h-4 rounded bg-gray-300"></div>
-                </div>
-              ))}
-            </div>
-          ) : servicesError ? (
-            <div className="text-center text-red-500 py-4">{servicesError}</div>
-          ) : services.length > 0 ? (
-            <div className="flex overflow-x-auto pb-2 scrollbar-hide gap-4 px-2" dir="rtl">
-              {services
-                .sort((a, b) => a.pro - b.pro)
-                .map((service) => {
-                  const { icon, color } = getServiceIconAndColor(service.ser_name);
-                  return (
-                    <div
-                      key={service.id}
-                      onClick={() => handleServiceClick(service.id)}
-                      className={`
-                        flex-shrink-0 
-                        ${color} 
-                        p-4 
-                        rounded-xl 
-                        w-28 
-                        h-32
-                        flex 
-                        flex-col 
-                        items-center 
-                        justify-center
-                        border-2 
-                        border-white
-                        shadow-[0_5px_15px_rgba(0,0,0,0.15)]
-                        transform
-                        transition-all
-                        duration-300
-                        ease-in-out
-                        hover:shadow-[0_8px_25px_rgba(0,0,0,0.2)]
-                        hover:-translate-y-1
-                        active:translate-y-0
-                        active:shadow-[0_5px_15px_rgba(0,0,0,0.15)]
-                        relative
-                        overflow-hidden
-                        before:content-['']
-                        before:absolute
-                        before:inset-0
-                        before:bg-gradient-to-br
-                        before:from-white/20
-                        before:to-transparent
-                        before:pointer-events-none
-                        cursor-pointer
-                      `}
-                      style={{
-                        userSelect: 'none',
-                      }}
-                    >
-                      {/* تأثير ثلاثي الأبعاد */}
-                      <div className="absolute inset-0 rounded-xl border-t-2 border-l-2 border-white/30 pointer-events-none"></div>
-
-                      <span
-                        className="text-3xl mb-2 z-10"
-                        style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
-                      >
-                        {icon}
-                      </span>
-
-                      <span
-                        className="text-sm font-bold text-center z-10 px-1"
-                        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
-                      >
-                        {service.ser_name}
-                      </span>
-
-                      {/* تأثير الضوء */}
-                      <div className="absolute top-0 right-0 w-12 h-12 bg-white/10 rounded-full filter blur-sm"></div>
-                    </div>
-                  );
-                })}
-            </div>
-          ) : (
-            <div className="text-center py-4">لا توجد خدمات متاحة حالياً</div>
-          )}
-        </section>
-
-        {/* قسم الرحلات الجارية */}
-        <section className="mb-6">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-lg font-bold text-gray-700">
-              الرحلات الجارية{Array(loadingDots).fill('.').join('')}
-            </h2>
-            <button
-              onClick={() => fetchTrips()}
-              className="text-yellow-600 text-sm hover:text-yellow-700 active:scale-95 transition-transform"
-              disabled={loading}
+      {/* SIDE MENU */}
+      <AnimatePresence>
+        {menuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={closeMenu}
+              className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm cursor-pointer"
+            />
+            <motion.div
+              ref={menuRef}
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed top-0 right-0 bottom-0 w-72 bg-white z-50 shadow-2xl flex flex-col"
             >
-              {loading ? 'جاري التحديث...' : 'تحديث'}
-            </button>
-          </div>
-          <div className="space-y-3">
-            {loading ? (
-              <div className="text-center py-4">جاري تحميل الرحلات...</div>
-            ) : error ? (
-              <div className="text-center text-red-500 py-4">{error}</div>
-            ) : trips.length > 0 ? (
-              trips.map((trip) => (
-                <div key={trip.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                  <div className="flex justify-between mb-2">
-                    <span className="font-medium">من: {trip.from}</span>
-                    <span className="text-yellow-600 font-bold">{trip.price}</span>
-                  </div>
-                  <div className="flex justify-between mb-2">
-                    <span className="font-medium">إلى: {trip.to}</span>
-                    <span className="text-gray-500">{trip.time}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-blue-700">المسافة: {trip.distance}</span>
-                    <span className="text-red-500">
-                      حالة الرحلة: {
-                        trip.status === 'new_order' ? 'بإنتظار الكابتن' :
-                          trip.status === 'start' ? 'قيد التنفيذ' :
-                            trip.status === 'pending' ? 'قيد الانتظار' :
-                              trip.status === 'end' ? 'منتهية' :
-                                trip.status
-                      }
-                    </span>
-                  </div>
+              {/* Menu Header */}
+              <div className="bg-yellow-400 p-6 pt-12 text-black">
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-2xl shadow-lg mb-3 mx-auto">
+                  <FaUser />
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-4">لا توجد رحلات جارية حالياً</div>
-            )}
-          </div>
-        </section>
-
-        {/* قسم الإعلانات */}
-        <section>
-          <h2 className="text-lg font-bold mb-3 text-gray-700">العروض</h2>
-          <div className="relative h-40 overflow-hidden rounded-xl">
-            {ads.map((ad, index) => (
-              <div
-                key={ad.id}
-                className={`absolute top-0 left-0 w-full h-full ${ad.bg} flex items-center justify-center text-white font-bold text-xl
-                  transition-opacity duration-500 ease-in-out
-                  ${index === currentAdIndex ? 'opacity-100' : 'opacity-0'}`}
-                style={{ userSelect: 'none' }}
-              >
-                {ad.text}
+                <h2 className="text-xl font-bold text-center">أهلاً بك</h2>
+                <p className="text-center opacity-80 text-sm">المستخدم المميز</p>
               </div>
+
+              {/* Menu Items */}
+              <nav className="flex-1 p-4 overflow-y-auto">
+                <ul className="space-y-1">
+                  {[
+                    { icon: <FaUser />, label: 'الملف الشخصي' },
+                    { icon: <FaWallet />, label: 'المحفظة' },
+                    { icon: <FaHistory />, label: 'الرحلات السابقة' },
+                    { icon: <FaPercentage />, label: 'العروض' },
+                    { icon: <FaPhoneAlt />, label: 'تواصل معنا' },
+                    { icon: <FaCog />, label: 'الإعدادات' },
+                  ].map((item, idx) => (
+                    <li key={idx}>
+                      <button className="w-full flex items-center gap-4 p-3 hover:bg-gray-50 rounded-xl transition-all text-gray-700 hover:text-black">
+                        <span className="text-gray-400">{item.icon}</span>
+                        <span className="font-bold">{item.label}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+
+              <div className="p-4 border-t border-gray-100">
+                <button onClick={closeMenu} className="w-full py-3 bg-gray-100 rounded-xl font-bold text-gray-600 hover:bg-gray-200">
+                  إغلاق القائمة
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <main className="pt-20 pb-24 px-4 max-w-lg mx-auto md:max-w-xl">
+
+        {/* HERO / ADS SECTION - Styled like a featured banner */}
+        <section className="mb-6 relative h-48 rounded-2xl overflow-hidden shadow-lg cursor-pointer group">
+          {ads.map((ad, index) => (
+            <div
+              key={ad.id}
+              className={`absolute inset-0 ${ad.bg} flex flex-col items-center justify-center text-white p-6 transition-opacity duration-700
+                  ${index === currentAdIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}
+                `}
+            >
+              <h2 className="text-2xl font-black mb-1 text-center drop-shadow-md">{ad.text}</h2>
+              <p className="opacity-90 font-medium bg-black/10 px-3 py-1 rounded-full">{ad.subtext}</p>
+            </div>
+          ))}
+          {/* Dots */}
+          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-20">
+            {ads.map((_, idx) => (
+              <div key={idx} className={`w-2 h-2 rounded-full transition-all ${idx === currentAdIndex ? 'bg-white w-4' : 'bg-white/50'}`} />
             ))}
           </div>
         </section>
+
+        {/* SERVICES GRID */}
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-800">خدماتنا</h2>
+          </div>
+
+          {servicesLoading ? (
+            <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide px-1">
+              {dummyServices.map(i => <div key={i} className="min-w-[100px] h-32 bg-gray-100 rounded-xl animate-pulse" />)}
+            </div>
+          ) : servicesError ? (
+            <div className="text-red-500 text-center text-sm">{servicesError}</div>
+          ) : (
+            <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide px-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {services.map(service => {
+                const visual = getServiceVisuals(service.ser_name);
+                return (
+                  <motion.div
+                    key={service.id}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleServiceClick(service.id)}
+                    className={`
+                                min-w-[110px] h-32
+                                flex flex-col items-center justify-center p-3 rounded-2xl cursor-pointer transition-all
+                                ${visual.bg} hover:shadow-md border border-transparent hover:border-yellow-400
+                            `}
+                  >
+                    <span className="text-4xl mb-3 filter drop-shadow-sm">{visual.icon}</span>
+                    <span className="text-xs font-bold text-center leading-tight text-gray-800">{service.ser_name}</span>
+                  </motion.div>
+                )
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* SAVED PLACES SHORTCUTS */}
+        <section className="mb-8">
+          <h2 className="text-lg font-bold text-gray-800 mb-3">وجهات مفضلة</h2>
+          <div className="space-y-2">
+            <div onClick={handleGenericMapClick} className="flex items-center gap-4 p-3 bg-white hover:bg-gray-50 rounded-xl border-b border-gray-50 cursor-pointer">
+              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600"><FaStar /></div>
+              <div>
+                <h3 className="font-bold text-sm">الأماكن المحفوظة</h3>
+                <p className="text-xs text-gray-400">المنزل، العمل...</p>
+              </div>
+            </div>
+            <div onClick={handleGenericMapClick} className="flex items-center gap-4 p-3 bg-white hover:bg-gray-50 rounded-xl border-b border-gray-50 cursor-pointer">
+              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600"><FaHistory /></div>
+              <div>
+                <h3 className="font-bold text-sm">الشام مول</h3>
+                <p className="text-xs text-gray-400">دمشق، كفرسوسة</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ACTIVE TRIPS */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-800">نشاطك الحالي</h2>
+            <button onClick={() => fetchTrips()} className="text-yellow-600 text-sm font-bold">تحديث</button>
+          </div>
+
+          {loading ? (
+            <div className="p-8 text-center text-gray-400 text-sm">جاري التحميل...</div>
+          ) : trips.length > 0 ? (
+            <div className="space-y-4">
+              {trips.map(trip => (
+                <div key={trip.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold">
+                        {trip.status === 'new_order' ? 'جديد' : trip.status === 'start' ? 'جارية' : trip.status}
+                      </div>
+                      <span className="text-xs text-gray-400">#{trip.id}</span>
+                    </div>
+                    <span className="font-black text-gray-900">{trip.price}</span>
+                  </div>
+
+                  <div className="relative border-r-2 border-gray-200 pr-4 py-1 space-y-4">
+                    <div className="relative">
+                      <div className="absolute -right-[23px] top-1 w-3 h-3 bg-black rounded-full ring-2 ring-white"></div>
+                      <h4 className="text-xs text-gray-400">من</h4>
+                      <p className="font-bold text-sm">{trip.from}</p>
+                    </div>
+                    <div className="relative">
+                      <div className="absolute -right-[23px] top-1 w-3 h-3 bg-yellow-400 rounded-full ring-2 ring-white"></div>
+                      <h4 className="text-xs text-gray-400">إلى</h4>
+                      <p className="font-bold text-sm">{trip.to}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 opacity-50">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-3xl mb-2">🍃</div>
+              <p className="text-sm font-medium">لا توجد رحلات حالياً</p>
+            </div>
+          )}
+        </section>
+
       </main>
     </div>
   );
