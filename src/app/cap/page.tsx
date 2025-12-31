@@ -39,33 +39,7 @@ const MapComponent = dynamic(
 
 const DEFAULT_POSITION: Position = [33.5138, 36.2765];
 
-declare global {
-  interface Window {
-    // للاتصال من JavaScript إلى Kotlin
-    Android?: {
-      receiveMessage: (action: string, message: string) => void;
-    };
 
-    // للاتصال من Kotlin إلى JavaScript
-    updateLocation?: (lat: number, lng: number) => void;
-    handleNewOrder?: (orderId: number) => void;
-    setCaptainData?: (data: CaptainData) => void;
-    update_cost?: (km: string, min: string, cost: string) => void;
-    handleOpenOrder?: (orderData: KotlinOrderData) => void;
-    handleOpenOrderResponse?: (response: string) => void;
-    openYandexNavigation?: (startLat: number, startLng: number, endLat: number, endLng: number) => void;
-    handleStopTrackingButton?: () => void;
-
-    // دالات جديدة لتتبع المسار
-    updateOrderLocation?: (orderId: number, lat: number, lng: number) => void;
-    updateOrderRoute?: (orderId: number, routeData: string) => void;
-
-    // إذا كنت تستخدم ReactNativeWebView
-    ReactNativeWebView?: {
-      postMessage: (message: string) => void;
-    };
-  }
-}
 
 export default function CaptainApp() {
   // State

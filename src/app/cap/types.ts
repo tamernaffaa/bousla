@@ -168,6 +168,18 @@ declare global {
     updateLocation?: (lat: number, lng: number) => void;
     update_cost?: (km: string, min: string, cost: string) => void;
     updateOrderLocation?: (orderId: number, lat: number, lng: number) => void;
+
+    // Additional properties moved from page.tsx
+    setCaptainData?: (data: CaptainData) => void;
+    handleOpenOrder?: (orderData: KotlinOrderData) => void;
+    handleOpenOrderResponse?: (response: string) => void;
+    openYandexNavigation?: (startLat: number, startLng: number, endLat: number, endLng: number) => void;
+    handleStopTrackingButton?: () => void;
+    updateOrderRoute?: (orderId: number, routeData: string) => void;
+    ReactNativeWebView?: {
+      postMessage: (message: string) => void;
+    };
+
     Android?: {
       receiveMessage: (action: string, message: string) => void;
       postMessage: (message: string) => void;
