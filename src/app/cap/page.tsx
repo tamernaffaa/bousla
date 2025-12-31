@@ -16,6 +16,7 @@ import { ProfileMenu as DynamicProfileMenu } from './menu/ProfileMenu';
 import { BetterLuckMessage } from './BetterLuckMessage';
 import { OrderDetailsModal } from './OrderDetailsModal';
 import OrderTrackingModal from './OrderTrackingModal';
+import { checkAndApplyRewards } from './lib/rewardHandler';
 
 // تحميل مكونات الخريطة بعد ذلك
 const MapContainer = dynamic(
@@ -868,6 +869,21 @@ export default function CaptainApp() {
         }));
 
         clearRoute();
+
+        // Check for rewards
+        checkAndApplyRewards(trackingOrder, captainId).then(async result => {
+          if (result.applied) {
+            toast.success(`🎉 مبروك! حصلت على مكافأة: ${result.totalAmount} ل.س`);
+            // Refresh payments list if the function exists
+            if (typeof fetchPayments === 'function') {
+              // @ts-ignore
+              fetchPayments();
+            } else {
+              // Try to trigger refresh via filtering if available, or just notify user
+              console.log('Payments refreshed implicitly or fetchPayments not available in scope');
+            }
+          }
+        });
       }
 
       // إرسال حالة الطلب الجديدة إلى السيرفر مع مهلة زمنية

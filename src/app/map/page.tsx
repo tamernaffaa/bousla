@@ -11,6 +11,8 @@ import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
 import GlobeLoader from "../components/GlobeLoader";
 import ChildServicesList from "../components/ChildServicesList";
+import PromotionCodeInput from "../../components/PromotionCodeInput";
+import AvailablePromotions from "../../components/AvailablePromotions";
 import "../cap/native-styles.css";
 
 
@@ -86,6 +88,9 @@ const MapOnlyPage: React.FC = () => {
   const [showTripInfo, setShowTripInfo] = useState(false);
   const [showSearch, setShowSearch] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Promotion state
+  const [appliedPromotion, setAppliedPromotion] = useState<{ discount: number; promotion: any } | null>(null);
 
   const hideTripInfo = () => {
     setShowTripInfo(false);
@@ -568,13 +573,20 @@ const MapOnlyPage: React.FC = () => {
       const kmPrice = parseFloat(chosenService.km) || 0;
       const minutePrice = parseFloat(chosenService.m_cost) || 0;
       const additionalCost = parseFloat(chosenService.add_cost) || 0;
-      const discount = parseFloat(chosenService.dis_cost) || 0;
+      const serviceDiscount = parseFloat(chosenService.dis_cost) || 0;
       const tax = parseFloat(chosenService.tax) || 0;
       const firstKmCost = firstKm;
       const distanceCost = kmPrice * roundedDistance;
       const durationCost = minutePrice * roundedDuration;
       const totalBeforeDiscount = firstKmCost + distanceCost + durationCost + additionalCost + tax;
-      const finalPrice = totalBeforeDiscount - discount;
+
+      // Apply service discount first
+      const priceAfterServiceDiscount = totalBeforeDiscount - serviceDiscount;
+
+      // Apply promotion discount
+      const promotionDiscount = appliedPromotion?.discount || 0;
+      const finalPrice = priceAfterServiceDiscount - promotionDiscount;
+
       const orderData = {
         user_id: userId,
         ser_chi_id: chosenService.id,
@@ -591,7 +603,7 @@ const MapOnlyPage: React.FC = () => {
         cost: Math.max(0, Math.ceil(finalPrice)).toString(),
         km_price: kmPrice.toFixed(0),
         min_price: minutePrice.toFixed(0),
-        discount: discount.toFixed(0),
+        discount: (serviceDiscount + promotionDiscount).toFixed(0),
         add1: (additionalCost + tax).toFixed(0),
         f_km: (firstKmCost).toFixed(0)
       };
@@ -602,6 +614,23 @@ const MapOnlyPage: React.FC = () => {
       if (!result.order_id) {
         throw new Error('لم يتم استلام رقم الطلب من الخادم');
       }
+
+      // Record promotion usage if applied
+      if (appliedPromotion && appliedPromotion.promotion) {
+        try {
+          const { supabase } = await import('../../lib/supabaseClient');
+          await supabase.from('promotion_usage').insert({
+            promotion_id: appliedPromotion.promotion.id,
+            user_id: userId,
+            order_id: result.order_id,
+            discount_amount: promotionDiscount
+          });
+        } catch (promoError) {
+          console.error('Failed to record promotion usage:', promoError);
+          // Don't fail the order if promotion recording fails
+        }
+      }
+
       toast.success(`تم إنشاء الطلب بنجاح! رقم الطلب: ${result.order_id}`, {
         id: loadingToast,
         duration: 5000
@@ -634,6 +663,7 @@ const MapOnlyPage: React.FC = () => {
       setEndPoint(null);
       setTripInfo(null);
       setChosenService(null);
+      setAppliedPromotion(null);
     } catch (error) {
       console.error("فشل إرسال الطلب:", error);
       const errorMessage = error instanceof Error ? error.message : "حدث خطأ أثناء إرسال الطلب";
@@ -697,12 +727,68 @@ const MapOnlyPage: React.FC = () => {
             </h3>
 
             {childServices.length > 0 ? (
-              <ChildServicesList
-                services={childServices}
-                distance={tripInfo.distance}
-                duration={tripInfo.adjustedDuration}
-                onServiceSelect={(service) => setChosenService(service)}
-              />
+              <>
+                <ChildServicesList
+                  services={childServices}
+                  distance={tripInfo.distance}
+                  duration={tripInfo.adjustedDuration}
+                  onServiceSelect={(service) => setChosenService(service)}
+                />
+
+                {/* Available Promotions - تلقائي */}
+                {chosenService && userId && startPoint && endPoint && (
+                  <div className="mt-3">
+                    <AvailablePromotions
+                      orderValue={(() => {
+                        const roundedDistance = Math.ceil(tripInfo.distance * 10) / 10;
+                        const roundedDuration = Math.ceil(tripInfo.adjustedDuration);
+                        const firstKm = parseFloat(chosenService.f_km) || 0;
+                        const kmPrice = parseFloat(chosenService.km) || 0;
+                        const minutePrice = parseFloat(chosenService.m_cost) || 0;
+                        const additionalCost = parseFloat(chosenService.add_cost) || 0;
+                        const serviceDiscount = parseFloat(chosenService.dis_cost) || 0;
+                        const tax = parseFloat(chosenService.tax) || 0;
+                        const total = firstKm + (kmPrice * roundedDistance) + (minutePrice * roundedDuration) + additionalCost + tax - serviceDiscount;
+                        return Math.max(0, total);
+                      })()}
+                      userId={userId}
+                      serviceId={chosenService.id}
+                      startLat={startPoint.lat}
+                      startLng={startPoint.lon}
+                      endLat={endPoint.lat}
+                      endLng={endPoint.lon}
+                      onPromotionSelected={(data) => setAppliedPromotion(data)}
+                    />
+                  </div>
+                )}
+
+                {/* Promotion Code Input - يدوي */}
+                {chosenService && userId && startPoint && endPoint && (
+                  <div className="mt-3">
+                    <PromotionCodeInput
+                      orderValue={(() => {
+                        const roundedDistance = Math.ceil(tripInfo.distance * 10) / 10;
+                        const roundedDuration = Math.ceil(tripInfo.adjustedDuration);
+                        const firstKm = parseFloat(chosenService.f_km) || 0;
+                        const kmPrice = parseFloat(chosenService.km) || 0;
+                        const minutePrice = parseFloat(chosenService.m_cost) || 0;
+                        const additionalCost = parseFloat(chosenService.add_cost) || 0;
+                        const serviceDiscount = parseFloat(chosenService.dis_cost) || 0;
+                        const tax = parseFloat(chosenService.tax) || 0;
+                        const total = firstKm + (kmPrice * roundedDistance) + (minutePrice * roundedDuration) + additionalCost + tax - serviceDiscount;
+                        return Math.max(0, total);
+                      })()}
+                      userId={userId}
+                      serviceId={chosenService.id}
+                      startLat={startPoint.lat}
+                      startLng={startPoint.lon}
+                      endLat={endPoint.lat}
+                      endLng={endPoint.lon}
+                      onPromotionApplied={(data) => setAppliedPromotion(data)}
+                    />
+                  </div>
+                )}
+              </>
             ) : (
               <p className="text-center text-gray-500 py-4">جارٍ تحميل الخدمات المتاحة...</p>
             )}

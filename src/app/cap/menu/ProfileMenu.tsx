@@ -218,7 +218,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   return (
     <div className="fixed inset-0 z-50" style={{ direction: 'ltr' }}>
       {/* خلفية سوداء شفافة */}
-        <div className="absolute left-0 right-0 transition-opacity" style={{top: '4rem', height: 'calc(100vh - 4rem)', backgroundColor: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(8px)'}} onClick={onClose} />
+      <div className="absolute left-0 right-0 transition-opacity" style={{ top: '4rem', height: 'calc(100vh - 4rem)', backgroundColor: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(8px)' }} onClick={onClose} />
       {/* القائمة الجانبية */}
       <div
         className="fixed left-0 top-16 w-3/4 max-w-xs bg-white h-[calc(100vh-4rem)] shadow-2xl flex flex-col animate-slide-in-left z-50"
@@ -266,6 +266,20 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
               </button>
               <button onClick={() => setCurrentView('history')} className="w-full flex items-center p-4 hover:bg-gray-50 active:bg-blue-50 transition-colors ripple">
                 <Icons.History /><span className="text-gray-800 text-base font-medium flex-1 text-right mr-3">الطلبات السابقة</span><Icons.ChevronLeft />
+              </button>
+              <button
+                onClick={() => {
+                  const params = new URLSearchParams(window.location.search);
+                  const userId = params.get('user_id') || '1';
+                  window.location.href = `/cap/rewards?user_id=${userId}`;
+                }}
+                className="w-full flex items-center p-4 hover:bg-gray-50 active:bg-yellow-50 transition-colors ripple"
+              >
+                <svg className="w-6 h-6 text-yellow-500 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-gray-800 text-base font-medium flex-1 text-right mr-3">المكافآت والحوافز</span>
+                <Icons.ChevronLeft />
               </button>
               <button onClick={onvertioal_order} className="w-full flex items-center p-4 hover:bg-gray-50 active:bg-blue-50 transition-colors ripple">
                 <Icons.List /><span className="text-gray-800 text-base font-medium flex-1 text-right mr-3">طلب افتراضي</span><Icons.ChevronLeft />
