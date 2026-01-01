@@ -11,7 +11,7 @@ import {
   Profile, TrackingData, LastOrder, CaptainData, KotlinOrderData, OrderStatusResponse
 } from './types';
 import { FaUser, FaBars, FaSearch, FaMapMarkerAlt, FaChevronUp, FaPowerOff, FaCompass, FaPlus, FaMinus, FaLayerGroup } from 'react-icons/fa';
-import { createCustomIcon, decodePolyline, extractMunicipality, createCarIcon } from './mapUtils';
+import { createCustomIcon, decodePolyline, extractMunicipality, createCarIcon, calculateDistance } from './mapUtils';
 import { supabase } from '../../lib/supabaseClient';
 import { captainApi, ordersApi, servicesApi, paymentsApi } from './api';
 import { ProfileMenu as DynamicProfileMenu } from './menu/ProfileMenu';
@@ -459,7 +459,55 @@ export default function CaptainApp() {
       window.updateOrderLocation = () => { };
       window.updateOrderRoute = () => { };
     };
+    return () => {
+      window.updateOrderLocation = () => { };
+      window.updateOrderRoute = () => { };
+    };
   }, [activeRoute, icons.carIcon]);
+
+  // 📡 Realtime Matching Listener (Captain Side)
+  useEffect(() => {
+    if (!active || !currentLocation || !captainId) return;
+
+    const matchingChannel = supabase.channel('bousla_matching')
+      .on('broadcast', { event: 'new_order' }, async (payload) => {
+        const { order_id, lat, lon } = payload.payload;
+
+        // 1. Calculate Distance
+        const dist = calculateDistance(currentLocation[0], currentLocation[1], lat, lon);
+        console.log(`New Order ${order_id} at ${dist.toFixed(2)}km. Zone: ${zoneRadius}km`);
+
+        // 2. Check Zone
+        if (dist <= zoneRadius) {
+          // 3. Notify Captain (UI)
+          // Ideally play sound here
+          toast.info(`🔔 طلب جديد قريب منك! (${dist.toFixed(1)} كم)`, {
+            position: "top-center",
+            autoClose: 5000,
+            onClick: () => {
+              if ((window as any).handleNewOrder) {
+                (window as any).handleNewOrder(order_id);
+              }
+            }
+          });
+
+          // 4. Notify Customer that a captain is nearby
+          await supabase.channel('bousla_matching').send({
+            type: 'broadcast',
+            event: 'captain_found',
+            payload: {
+              order_id: order_id,
+              captain_id: captainId
+            }
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(matchingChannel);
+    };
+  }, [active, currentLocation, captainId, zoneRadius]);
 
   // Callbacks
   const fetchInitialData = useCallback(async () => {
