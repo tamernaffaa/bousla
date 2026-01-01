@@ -8,6 +8,8 @@ import { fetchTrips as fetchTripsApi, fetchServices as fetchServicesApi } from "
 import { motion, AnimatePresence } from "framer-motion";
 import "../cap/native-styles.css";
 import Image from 'next/image';
+import { supabase } from '../../lib/supabaseClient';
+import { toast } from 'react-toastify';
 
 interface Trip {
   id: number;
@@ -55,6 +57,21 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [servicesError, setServicesError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Active Order State
+  const [activeOrder, setActiveOrder] = useState<{
+    order_id: number;
+    from: string;
+    to: string;
+    service_name: string;
+    service_icon?: string;
+    cost: string;
+    distance: string;
+    duration: number;
+    status: string;
+    timestamp: number;
+  } | null>(null);
+  const [captainsNotified, setCaptainsNotified] = useState(0);
 
   // Ads Data
   const ads = [
@@ -111,6 +128,55 @@ export default function HomePage() {
   useEffect(() => {
     fetchTrips();
     fetchServices();
+  }, []);
+
+  // Load Active Order from localStorage
+  useEffect(() => {
+    const storedOrder = localStorage.getItem('active_order');
+    if (storedOrder) {
+      try {
+        const order = JSON.parse(storedOrder);
+        setActiveOrder(order);
+        setCaptainsNotified(0);
+
+        // Listen for captain_found broadcasts
+        const matchingChannel = supabase.channel('bousla_matching')
+          .on('broadcast', { event: 'captain_found' }, (payload) => {
+            if (payload.payload.order_id === order.order_id) {
+              setCaptainsNotified(prev => prev + 1);
+            }
+          })
+          .subscribe();
+
+        // Listen for order status updates
+        const orderSubscription = supabase
+          .channel(`order_status_${order.order_id}`)
+          .on('postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${order.order_id}` },
+            (payload) => {
+              const newStatus = payload.new.status;
+              if (newStatus === 'accepted' || newStatus === 'cap_accept') {
+                toast.success('تم قبول طلبك! الكابتن في الطريق 🚕');
+                setActiveOrder(prev => prev ? { ...prev, status: 'accepted' } : null);
+                localStorage.setItem('active_order', JSON.stringify({ ...order, status: 'accepted' }));
+              } else if (newStatus === 'cancelled') {
+                toast.info('تم إلغاء الطلب');
+                localStorage.removeItem('active_order');
+                setActiveOrder(null);
+              }
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(matchingChannel);
+          supabase.removeChannel(orderSubscription);
+        };
+      } catch (e) {
+        console.error('Error loading active order:', e);
+        localStorage.removeItem('active_order');
+      }
+    }
   }, []);
 
   // Ads Rotator
@@ -334,6 +400,86 @@ export default function HomePage() {
             <button onClick={() => fetchTrips()} className="text-yellow-600 text-sm font-bold">تحديث</button>
           </div>
 
+          {/* Active Order - Searching for Captain */}
+          {activeOrder && activeOrder.status === 'searching_for_captain' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-br from-yellow-50 to-orange-50 p-4 rounded-2xl shadow-lg border-2 border-yellow-400 mb-4"
+            >
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex items-center gap-2">
+                  <motion.div
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"
+                  >
+                    <span className="animate-spin">🔍</span>
+                    جاري البحث عن كابتن
+                  </motion.div>
+                </div>
+                <span className="font-black text-gray-900 text-lg">{activeOrder.cost} ل.س</span>
+              </div>
+
+              <div className="relative border-r-2 border-yellow-400 pr-4 py-1 space-y-3">
+                <div className="relative">
+                  <div className="absolute -right-[23px] top-1 w-3 h-3 bg-green-500 rounded-full ring-2 ring-white shadow-md"></div>
+                  <h4 className="text-xs text-gray-500 font-bold">من</h4>
+                  <p className="font-bold text-sm text-gray-800">{activeOrder.from}</p>
+                </div>
+                <div className="relative">
+                  <div className="absolute -right-[23px] top-1 w-3 h-3 bg-red-500 rounded-full ring-2 ring-white shadow-md"></div>
+                  <h4 className="text-xs text-gray-500 font-bold">إلى</h4>
+                  <p className="font-bold text-sm text-gray-800">{activeOrder.to}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-yellow-200 flex items-center justify-between">
+                <div className="flex items-center gap-3 text-xs text-gray-600">
+                  <span className="font-bold bg-white px-2 py-1 rounded">{activeOrder.service_name}</span>
+                  <span>{activeOrder.distance} كم</span>
+                  <span>{activeOrder.duration} د</span>
+                </div>
+              </div>
+
+              {captainsNotified > 0 && (
+                <div className="mt-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold text-center">
+                  تم إشعار {captainsNotified} كابتن 🚕
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  if (confirm('هل تريد إلغاء الطلب؟')) {
+                    supabase.from('orders')
+                      .update({ status: 'cancelled', cancelled_by: 'user' })
+                      .eq('id', activeOrder.order_id);
+                    localStorage.removeItem('active_order');
+                    setActiveOrder(null);
+                    toast.info('تم إلغاء الطلب');
+                  }
+                }}
+                className="w-full mt-3 py-2 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-colors"
+              >
+                إلغاء الطلب
+              </button>
+            </motion.div>
+          )}
+
+          {/* Accepted Order */}
+          {activeOrder && activeOrder.status === 'accepted' && (
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-2xl shadow-lg border-2 border-green-400 mb-4">
+              <div className="flex justify-between items-start mb-3">
+                <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                  ✅ تم قبول الطلب
+                </div>
+                <span className="font-black text-gray-900">{activeOrder.cost} ل.س</span>
+              </div>
+              <p className="text-sm text-gray-600 text-center">الكابتن في الطريق إليك!</p>
+            </div>
+          )}
+
+          {/* Previous Trips */}
           {loading ? (
             <div className="p-8 text-center text-gray-400 text-sm">جاري التحميل...</div>
           ) : trips.length > 0 ? (
@@ -365,7 +511,7 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-          ) : (
+          ) : !activeOrder && (
             <div className="flex flex-col items-center justify-center py-8 opacity-50">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-3xl mb-2">🍃</div>
               <p className="text-sm font-medium">لا توجد رحلات حالياً</p>

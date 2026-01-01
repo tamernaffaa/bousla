@@ -135,7 +135,13 @@ const MapOnlyPage: React.FC = () => {
 
   const goToState = (newState: 'idle' | 'searching' | 'selecting_service' | 'searching_for_captain' | 'confirming') => {
     if (viewState !== newState) {
-      window.history.pushState({ view: newState }, '');
+      // Use replaceState instead of pushState to avoid stacking history entries
+      // Only push a new state when moving away from 'idle'
+      if (viewState === 'idle' && newState !== 'idle') {
+        window.history.pushState({ view: newState }, '');
+      } else {
+        window.history.replaceState({ view: newState }, '');
+      }
       setViewState(newState);
     }
   };
@@ -514,10 +520,20 @@ const MapOnlyPage: React.FC = () => {
         }));
       }
 
-      // 🔄 Realtime Matching Start
-      setActiveOrderId(result.order_id);
-      setCaptainsFoundCount(0);
-      goToState('searching_for_captain');
+      // 💾 Save active order to localStorage
+      const activeOrder = {
+        order_id: result.order_id,
+        from: startPoint.name,
+        to: endPoint.name,
+        service_name: chosenService.name1,
+        service_icon: chosenService.photo1,
+        cost: cost,
+        distance: tripInfo.distance.toFixed(1),
+        duration: Math.ceil(tripInfo.adjustedDuration),
+        status: 'searching_for_captain',
+        timestamp: Date.now()
+      };
+      localStorage.setItem('active_order', JSON.stringify(activeOrder));
 
       // Broadcast to Captains
       await supabase.channel('bousla_matching').send({
@@ -530,6 +546,9 @@ const MapOnlyPage: React.FC = () => {
           service_id: chosenService.id
         }
       });
+
+      // 🏠 Redirect to home page
+      window.location.href = '/first';
 
     } catch (e: any) {
       toast.error(e.message || "فشل الطلب", { id: loadingToast });
