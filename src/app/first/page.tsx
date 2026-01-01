@@ -139,11 +139,21 @@ export default function HomePage() {
         setActiveOrder(order);
         setCaptainsNotified(0);
 
-        // Listen for captain_found broadcasts
+        // Listen for broadcasts (Captain Found & Order Accepted)
         const matchingChannel = supabase.channel('bousla_matching')
           .on('broadcast', { event: 'captain_found' }, (payload) => {
             if (payload.payload.order_id === order.order_id) {
               setCaptainsNotified(prev => prev + 1);
+            }
+          })
+          .on('broadcast', { event: 'order_accepted' }, (payload) => {
+            if (payload.payload.order_id === order.order_id) {
+              console.log('⚡ Order accepted via broadcast!', payload.payload);
+              toast.success(`🎉 تم قبول طلبك بواسطة الكابتن!`);
+
+              const updatedOrder = { ...order, status: 'accepted', captain_id: payload.payload.captain_id };
+              setActiveOrder(updatedOrder);
+              localStorage.setItem('active_order', JSON.stringify(updatedOrder));
             }
           })
           .subscribe();
@@ -178,6 +188,33 @@ export default function HomePage() {
       }
     }
   }, []);
+
+  // Polling Fallback (Check status every 3 seconds for reliability)
+  useEffect(() => {
+    if (!activeOrder || activeOrder.status !== 'searching_for_captain') return;
+
+    const interval = setInterval(async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id, cap_id, status')
+        .eq('id', activeOrder.order_id)
+        .single();
+
+      if (data && (data.status === 'cap_accept' || data.status === 'accepted') && data.cap_id) {
+        console.log('🔄 Polling detected accepted order:', data);
+
+        // منع التحديث المتكرر إذا كانت الحالة محدثة بالفعل
+        if (activeOrder.status !== 'accepted') {
+          toast.success('تم قبول طلبك! الكابتن في الطريق 🚕');
+          const updatedOrder = { ...activeOrder, status: 'accepted', captain_id: data.cap_id };
+          setActiveOrder(updatedOrder);
+          localStorage.setItem('active_order', JSON.stringify(updatedOrder));
+        }
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [activeOrder]);
 
   // Ads Rotator
   useEffect(() => {
