@@ -184,6 +184,31 @@ const MapOnlyPage: React.FC = () => {
         }
       } catch (e) { console.error('Data Load Error', e); }
     }
+
+    // 📍 Start Location Tracking from Flutter
+    if ((window as any).Android) {
+      (window as any).Android.postMessage(JSON.stringify({ action: 'start_location_tracking' }));
+    }
+
+    // 📍 Listen for Location Updates from Flutter
+    (window as any).updateLocation = (lat: number, lon: number) => {
+      // Only auto-update start point if we haven't manually searched for one, 
+      // OR if the current start point is "My Location" (user hasn't selected a specific place yet)
+      setStartPoint(prev => {
+        if (!prev || prev.name === "موقعي الحالي") {
+          return { name: "موقعي الحالي", lat, lon };
+        }
+        return prev;
+      });
+    };
+
+    return () => {
+      // Cleanup
+      if ((window as any).Android) {
+        (window as any).Android.postMessage(JSON.stringify({ action: 'stop_location_tracking' }));
+      }
+      delete (window as any).updateLocation;
+    };
   }, []);
 
   // Fetch Services when Service ID is set
@@ -250,7 +275,11 @@ const MapOnlyPage: React.FC = () => {
       if (childServices.length > 0) setChosenService(childServices[0]);
 
     } catch (error) {
-      toast.error("فشل في حساب المسار");
+      console.error("Routing Error:", error);
+      toast.error("فشل في حساب المسار. يرجى المحاولة مرة أخرى.");
+      // Optional: clear route to avoid misleading map
+      setRouteCoordinates([]);
+      setTripInfo(null);
     }
   }, [childServices, decodePolyline]);
 
