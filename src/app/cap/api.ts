@@ -1,11 +1,11 @@
 // api.ts
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import { 
-  Order, 
-  Service, 
-  Payment, 
-  LastOrder, 
-  ApiResponse, 
+import {
+  Order,
+  Service,
+  Payment,
+  LastOrder,
+  ApiResponse,
   OrderStatusResponse,
   OrderDetails,
   Captain
@@ -75,8 +75,8 @@ export const ordersApi = {
 
   // تحديث حالة الطلب
   updateStatus: async (
-    orderId: number, 
-    captainId: number, 
+    orderId: number,
+    captainId: number,
     status: string
   ): Promise<OrderStatusResponse> => {
     try {
@@ -144,10 +144,11 @@ export const ordersApi = {
         .from('orders')
         .select('*')
         .is('cap_id', null)
-        .eq('status', 'pending')
+        .in('status', ['pending', 'new_order']) // Fetch both pending and new_order
         .order('insert_time', { ascending: false })
 
       if (error) throw error
+      console.log(`📋 Found ${data?.length || 0} available orders`)
       return data || []
     } catch (error) {
       console.error('Error fetching available orders:', error)
@@ -177,14 +178,14 @@ export const servicesApi = {
 
   // تحديث حالة الخدمة
   updateStatus: async (
-    serviceId: number, 
-    active: boolean, 
+    serviceId: number,
+    active: boolean,
     capId: number
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from('cap_ser')
-        .update({ 
+        .update({
           active,
           updated_at: new Date().toISOString()
         })
@@ -262,7 +263,7 @@ export const captainApi = {
     try {
       const { error } = await supabase
         .from('users')
-        .update({ 
+        .update({
           active: active ? 1 : 0,
           updated_at: new Date().toISOString()
         })
@@ -278,17 +279,17 @@ export const captainApi = {
 
   // تغيير كلمة المرور
   changePassword: async (
-    capId: number, 
-    currentPassword: string, 
+    capId: number,
+    currentPassword: string,
     newPassword: string
   ): Promise<ApiResponse> => {
     try {
       // هنا يمكنك إضافة منطق التحقق من كلمة المرور الحالية وتحديثها
       // هذا يعتمد على كيفية تخزين كلمات المرور في قاعدة البيانات
-      
+
       const { error } = await supabase
         .from('users')
-        .update({ 
+        .update({
           password: newPassword, // تأكد من تشفير كلمة المرور
           updated_at: new Date().toISOString()
         })
@@ -319,15 +320,15 @@ export const fetchData = async <T = unknown>(
       case 'cap_ser':
         const services = await servicesApi.getCaptainServices(params.cap_id as number)
         return { success: true, data: services as T }
-      
+
       case 'get_cap_payment':
         const payments = await paymentsApi.getCaptainPayments(params.cap_id as number)
         return { success: true, data: payments as T }
-      
+
       case 'get_lastorder':
         const lastOrders = await ordersApi.getLastOrders(params.cap_id as number)
         return { success: true, data: lastOrders as T }
-      
+
       default:
         throw new Error(`Endpoint ${endpoint} not implemented`)
     }
@@ -353,7 +354,7 @@ export const fetchlast_order = async <T = unknown>(
     const lastOrders = await ordersApi.getLastOrders(params.cap_id as number)
     return { success: true, data: lastOrders as T }
   }
-  
+
   return { success: false, message: 'Endpoint not found' }
 }
 

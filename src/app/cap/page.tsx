@@ -578,12 +578,16 @@ export default function CaptainApp() {
     };
   }, [active, currentLocation, captainId, zoneRadius]);
 
-  // 🔄 Polling Listener (Fallback for Weak Connection)
+  // 🔄 Polling Listener (Fallback for Weak Connection + Initial Load)
   useEffect(() => {
     if (!active || !currentLocation || !captainId) return;
 
+    // Track notified orders to avoid duplicates
+    const notifiedOrders = new Set<number>();
+
     const pollOrders = async () => {
-      // 1. Fetch "pending" orders from DB
+      console.log('🔍 Polling for available orders...');
+      // 1. Fetch available orders from DB (pending + new_order)
       const availableOrders = await ordersApi.getAvailableOrders();
 
       // 2. Filter locally by Zone
@@ -594,10 +598,12 @@ export default function CaptainApp() {
 
         const dist = calculateDistance(currentLocation[0], currentLocation[1], lat, lon);
 
-        // 3. If match & not already notified (simplification: just notify)
-        if (dist <= zoneRadius) {
-          // Check if we should ignore (maybe already accepted locally? - basic version here)
-          toast.info(`🔔 طلب جديد (محدث) قريب منك! (${dist.toFixed(1)} كم)`, {
+        // 3. If match & not already notified
+        if (dist <= zoneRadius && !notifiedOrders.has(order.id)) {
+          notifiedOrders.add(order.id);
+          console.log(`✅ Found order ${order.id} within zone (${dist.toFixed(1)}km)`);
+
+          toast.info(`🔔 طلب متاح قريب منك! (${dist.toFixed(1)} كم)`, {
             position: "top-center",
             autoClose: 5000,
             onClick: () => {
@@ -610,11 +616,11 @@ export default function CaptainApp() {
       });
     };
 
-    // Run every 15 seconds
-    const intervalId = setInterval(pollOrders, 15000);
-
-    // Initial call
+    // Initial call immediately when captain activates
     pollOrders();
+
+    // Then poll every 15 seconds
+    const intervalId = setInterval(pollOrders, 15000);
 
     return () => clearInterval(intervalId);
   }, [active, currentLocation, captainId, zoneRadius]);
