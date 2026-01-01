@@ -20,6 +20,7 @@ import { OrderDetailsModal } from './OrderDetailsModal';
 import OrderTrackingModal from './OrderTrackingModal';
 import { RejectedOrdersModal } from './RejectedOrdersModal';
 import { checkAndApplyRewards } from './lib/rewardHandler';
+import { localOrderStorage } from '../../lib/localOrderStorage';
 
 // تحميل مكونات الخريطة بعد ذلك
 const MapContainer = dynamic(
@@ -1015,6 +1016,10 @@ export default function CaptainApp() {
 
       if (result.success) {
         setAcceptOrderStatus('success');
+
+        // حفظ الطلب محلياً للعمل بدون إنترنت
+        await localOrderStorage.saveOrder(selectedOrder);
+        console.log('💾 Order saved to local storage');
 
         // إرسال بيانات الطلب إلى Kotlin
         const orderData = {
