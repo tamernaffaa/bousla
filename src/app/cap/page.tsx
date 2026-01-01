@@ -412,6 +412,33 @@ export default function CaptainApp() {
   // Ref for throttling location broadcasts
   const lastLocationBroadcast = useRef<number>(0);
 
+  // 📡 Automatic Location Broadcasting (Every 10 seconds)
+  useEffect(() => {
+    if (!active || !currentLocation || !captainId) return;
+
+    const broadcastLocation = () => {
+      supabase.channel('bousla_matching').send({
+        type: 'broadcast',
+        event: 'location_update',
+        payload: {
+          driver_id: captainId,
+          lat: currentLocation[0],
+          lng: currentLocation[1],
+          status: 'online',
+          timestamp: Date.now()
+        }
+      }).then(() => console.log('📍 Location auto-broadcasted'));
+    };
+
+    // Initial broadcast
+    broadcastLocation();
+
+    // Broadcast every 10 seconds
+    const intervalId = setInterval(broadcastLocation, 10000);
+
+    return () => clearInterval(intervalId);
+  }, [active, currentLocation, captainId]);
+
   // تحميل الأيقونات بعد تحميل القوائم
   useEffect(() => {
     if (menusLoaded) {

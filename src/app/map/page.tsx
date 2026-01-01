@@ -522,7 +522,7 @@ const MapOnlyPage: React.FC = () => {
       // Broadcast to Captains
       await supabase.channel('bousla_matching').send({
         type: 'broadcast',
-        event: 'new_order',
+        event: 'new_order_request',
         payload: {
           order_id: result.order_id,
           lat: startPoint.lat,
