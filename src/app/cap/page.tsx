@@ -997,10 +997,23 @@ export default function CaptainApp() {
     setAcceptOrderStatus('loading');
 
     try {
-      const result = await ordersApi.updateStatus(selectedOrder.id, captainId, status);
-      console.log('Order status update result:', result);
+      // استخدام API الجديد مع Optimistic Locking
+      const result = await ordersApi.acceptOrder(selectedOrder.id, captainId);
+      console.log('Order acceptance result:', result);
 
-      if (result.status === 'success') {
+      // معالجة حالة القبول من كابتن آخر
+      if (result.alreadyAccepted) {
+        setAcceptOrderStatus('goodluck');
+        setTimeout(() => {
+          setShowOrderDetails(false);
+          setAcceptOrderStatus('idle');
+          clearRoute();
+          setShowMessage(true);
+        }, 2000);
+        return;
+      }
+
+      if (result.success) {
         setAcceptOrderStatus('success');
 
         // إرسال بيانات الطلب إلى Kotlin
@@ -1027,6 +1040,7 @@ export default function CaptainApp() {
 
         // إيقاف زر استقبال الطلبات
         setActive(false);
+        console.log('🛑 Stopped searching for new orders');
 
         setTimeout(() => {
           setShowOrderDetails(false);
@@ -1038,14 +1052,6 @@ export default function CaptainApp() {
 
           // بدء تتبع المسار
           sendToKotlin("start_route_tracking", selectedOrder.id.toString());
-        }, 2000);
-      } else if (result.status === 'goodluck') {
-        setAcceptOrderStatus('goodluck');
-        setTimeout(() => {
-          setShowOrderDetails(false);
-          setAcceptOrderStatus('idle');
-          clearRoute();
-          setShowMessage(true);
         }, 2000);
       } else {
         setAcceptOrderStatus('error');

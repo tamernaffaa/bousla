@@ -209,6 +209,92 @@ export const ordersApi = {
         message: 'فشل حفظ رفض الطلب'
       }
     }
+  },
+
+  // قبول الطلب مع التحقق من عدم القبول المزدوج (Optimistic Locking)
+  acceptOrder: async (
+    orderId: number,
+    captainId: number
+  ): Promise<{ success: boolean; message: string; alreadyAccepted?: boolean; order?: any }> => {
+    try {
+      console.log(`🔄 Attempting to accept order ${orderId} by captain ${captainId}...`);
+
+      // 1. التحقق من حالة الطلب الحالية
+      const { data: currentOrder, error: fetchError } = await supabase
+        .from('orders')
+        .select('id, cap_id, status')
+        .eq('id', orderId)
+        .single()
+
+      if (fetchError) {
+        console.error('Error fetching order:', fetchError);
+        throw fetchError;
+      }
+
+      // 2. التحقق من أن الطلب لم يُقبل من قبل
+      if (currentOrder.cap_id !== null && currentOrder.cap_id !== captainId) {
+        console.warn(`⚠️ Order ${orderId} already accepted by captain ${currentOrder.cap_id}`);
+        return {
+          success: false,
+          message: 'تم قبول الطلب من كابتن آخر',
+          alreadyAccepted: true
+        }
+      }
+
+      // 3. محاولة قبول الطلب (Atomic Update)
+      // استخدام .is('cap_id', null) يضمن أن التحديث يحدث فقط إذا كان cap_id = null
+      const { data: updatedOrder, error: updateError } = await supabase
+        .from('orders')
+        .update({
+          cap_id: captainId,
+          status: 'cap_accept',
+          accept_time: new Date().toISOString()
+        })
+        .eq('id', orderId)
+        .is('cap_id', null) // شرط مهم جداً: فقط إذا كان cap_id = null
+        .select()
+        .single()
+
+      if (updateError || !updatedOrder) {
+        // فشل التحديث = تم القبول من كابتن آخر في نفس اللحظة
+        console.warn(`⚠️ Race condition: Order ${orderId} was accepted by another captain`);
+        return {
+          success: false,
+          message: 'تم قبول الطلب من كابتن آخر',
+          alreadyAccepted: true
+        }
+      }
+
+      console.log(`✅ Order ${orderId} accepted successfully by captain ${captainId}`);
+
+      // 4. إشعار الزبون عبر Broadcast
+      try {
+        await supabase.channel('bousla_matching').send({
+          type: 'broadcast',
+          event: 'order_accepted',
+          payload: {
+            order_id: orderId,
+            captain_id: captainId,
+            timestamp: Date.now()
+          }
+        });
+        console.log(`📡 Broadcast sent: order_accepted for order ${orderId}`);
+      } catch (broadcastError) {
+        console.warn('Broadcast failed (non-critical):', broadcastError);
+      }
+
+      return {
+        success: true,
+        message: 'تم قبول الطلب بنجاح',
+        order: updatedOrder
+      }
+    } catch (error) {
+      console.error('Error accepting order:', error);
+      return {
+        success: false,
+        message: 'حدث خطأ أثناء قبول الطلب'
+      }
+    }
   }
 }
 
