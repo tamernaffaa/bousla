@@ -675,9 +675,39 @@ const MapOnlyPage: React.FC = () => {
               </button>
 
               <DraggableBar />
-              <div className="pt-2">
-                <h2 className="text-center font-bold text-gray-800">اختر نوع الخدمة</h2>
-                <p className="text-center text-xs text-gray-400 mt-1">المسافة: {tripInfo.distance.toFixed(1)} كم</p>
+
+              {/* Trip Details (From -> To) */}
+              <div className="px-4 pb-2">
+                <div className="flex flex-col gap-2">
+                  {/* From */}
+                  <div className="flex items-start gap-2">
+                    <div className="mt-1 min-w-[16px] h-4 w-4 rounded-full border-[3px] border-green-500 bg-white" />
+                    <div className="flex-1">
+                      <div className="text-[10px] text-gray-400 font-bold">من</div>
+                      <div className="text-sm font-semibold text-gray-800 line-clamp-1">{startPoint?.name || "موقع البدء"}</div>
+                    </div>
+                  </div>
+
+                  {/* Dotted Line */}
+                  <div className="mr-[7px] w-[2px] h-3 bg-gray-200" />
+
+                  {/* To */}
+                  <div className="flex items-start gap-2">
+                    <FaMapMarkerAlt className="mt-0.5 text-red-500 text-lg" />
+                    <div className="flex-1">
+                      <div className="text-[10px] text-gray-400 font-bold">إلى</div>
+                      <div className="text-sm font-semibold text-gray-800 line-clamp-1">{endPoint?.name || "الوجهة"}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-gray-100 mt-2">
+                <h2 className="text-center font-bold text-gray-800 text-sm">اختر نوع الخدمة</h2>
+                <div className="flex items-center justify-center gap-4 text-xs text-gray-400 mt-1">
+                  <div className="flex items-center gap-1"><FaClock className="text-gray-300" /> {Math.ceil(tripInfo.adjustedDuration)} دقيقة</div>
+                  <div className="flex items-center gap-1"><FaMapMarkerAlt className="text-gray-300" /> {tripInfo.distance.toFixed(1)} كم</div>
+                </div>
               </div>
             </div>
 
