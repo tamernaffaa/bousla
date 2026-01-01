@@ -154,6 +154,61 @@ export const ordersApi = {
       console.error('Error fetching available orders:', error)
       return []
     }
+  },
+
+  // حفظ رفض الطلب في قاعدة البيانات
+  rejectOrder: async (
+    orderId: number,
+    captainId: number,
+    reason: string,
+    distanceKm?: number,
+    serviceId?: number
+  ): Promise<{ success: boolean; message: string }> => {
+    try {
+      // 1. حفظ في جدول rejected_orders
+      const { error: insertError } = await supabase
+        .from('rejected_orders')
+        .insert({
+          order_id: orderId,
+          captain_id: captainId,
+          reason: reason,
+          distance_km: distanceKm,
+          service_id: serviceId,
+          rejected_at: new Date().toISOString()
+        })
+
+      if (insertError) {
+        console.error('Error inserting rejected order:', insertError)
+        throw insertError
+      }
+
+      console.log(`✅ Rejected order ${orderId} saved to database`)
+
+      // 2. تحديث إحصائيات الكابتن (إذا كانت الدالة موجودة)
+      try {
+        const { error: statsError } = await supabase.rpc(
+          'update_captain_rejection_stats',
+          { p_captain_id: captainId }
+        )
+
+        if (statsError) {
+          console.warn('Stats update failed (function may not exist yet):', statsError)
+        }
+      } catch (statsErr) {
+        console.warn('Stats update skipped:', statsErr)
+      }
+
+      return {
+        success: true,
+        message: 'تم حفظ رفض الطلب بنجاح'
+      }
+    } catch (error) {
+      console.error('Error rejecting order:', error)
+      return {
+        success: false,
+        message: 'فشل حفظ رفض الطلب'
+      }
+    }
   }
 }
 

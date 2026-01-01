@@ -1057,25 +1057,38 @@ export default function CaptainApp() {
   }, [selectedOrder, captainId, clearRoute]);
 
   // رفض الطلب
-  const handleRejectOrder = useCallback((orderId: number, reason: string = 'not_specified') => {
-    // Add to rejected orders list
-    setRejectedOrders(prev => [...prev, {
-      order_id: orderId,
-      reason: reason,
-      timestamp: Date.now()
-    }]);
+  const handleRejectOrder = useCallback(async (orderId: number, reason: string = 'not_specified') => {
+    try {
+      // 1. حفظ في قاعدة البيانات
+      const result = await ordersApi.rejectOrder(
+        orderId,
+        captainId,
+        reason
+      );
 
-    // Close order details
-    setShowOrderDetails(false);
-    setSelectedOrder(null);
+      if (result.success) {
+        // 2. إضافة للقائمة المحلية
+        setRejectedOrders(prev => [...prev, {
+          order_id: orderId,
+          reason: reason,
+          timestamp: Date.now()
+        }]);
 
-    toast.info(`تم رفض الطلب #${orderId}`, {
-      position: "top-center",
-      autoClose: 3000
-    });
+        // 3. إغلاق نافذة التفاصيل
+        setShowOrderDetails(false);
+        setSelectedOrder(null);
 
-    console.log(`❌ Order ${orderId} rejected. Reason: ${reason}`);
-  }, []);
+        toast.success(`تم رفض الطلب #${orderId} وحفظه في السجل`);
+        console.log(`❌ Order ${orderId} rejected and saved to DB. Reason: ${reason}`);
+      } else {
+        toast.error('فشل حفظ رفض الطلب في قاعدة البيانات');
+        console.error('Failed to save rejection to DB');
+      }
+    } catch (error) {
+      console.error('Error in handleRejectOrder:', error);
+      toast.error('حدث خطأ أثناء رفض الطلب');
+    }
+  }, [captainId]);
 
   // إضافة دالة لإنهاء تتبع المسار
   const stopRouteTracking = useCallback(() => {

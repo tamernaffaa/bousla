@@ -90,6 +90,11 @@ export interface Profile {
   name: string;
   phone: string;
   photo: string;
+  rating_avg?: string;
+  rating_count?: number;
+  rejection_rate?: string;
+  total_rejections?: number;
+  original_rating?: string;
 }
 
 export interface TrackingData {

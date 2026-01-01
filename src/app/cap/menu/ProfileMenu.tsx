@@ -41,7 +41,7 @@ interface ProfileMenuProps {
   rejectedOrdersCount?: number;
 }
 
-type MenuView = 'main' | 'services' | 'payments' | 'history' | 'rewards';
+type MenuView = 'main' | 'services' | 'payments' | 'history' | 'rewards' | 'rating';
 
 export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   profile,
@@ -119,6 +119,94 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
           </button>
         </div>
       ))}
+    </div>
+  );
+
+  const renderRating = () => (
+    <div className="space-y-4">
+      {/* التقييم الحالي */}
+      <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-6 border border-yellow-100">
+        <div className="text-center">
+          <div className="text-6xl font-black text-yellow-600 mb-2">
+            {profile.rating_avg || '0.00'}
+          </div>
+          <div className="flex justify-center gap-1 mb-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <span
+                key={star}
+                className={`text-2xl ${star <= Math.round(parseFloat(profile.rating_avg || '0'))
+                  ? 'text-yellow-400'
+                  : 'text-gray-300'
+                  }`}
+              >
+                ★
+              </span>
+            ))}
+          </div>
+          <p className="text-sm text-gray-600 font-bold">تقييمك الحالي</p>
+          <p className="text-xs text-gray-500 mt-1">
+            بناءً على {profile.rating_count || 0} تقييم
+          </p>
+        </div>
+      </div>
+
+      {/* معدل الرفض */}
+      <div className="bg-white rounded-2xl p-5 border border-gray-100">
+        <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <span className="text-red-500">🚫</span>
+          معدل رفض الطلبات
+        </h3>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">معدل الرفض:</span>
+            <span className={`font-bold ${parseFloat(profile.rejection_rate || '0') > 20
+              ? 'text-red-600'
+              : parseFloat(profile.rejection_rate || '0') > 10
+                ? 'text-orange-600'
+                : 'text-green-600'
+              }`}>
+              {profile.rejection_rate || '0.00'}%
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">إجمالي الرفض:</span>
+            <span className="font-bold text-gray-800">
+              {profile.total_rejections || 0} طلب
+            </span>
+          </div>
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500">
+              💡 كل 10% رفض = -0.1 نقطة من التقييم
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* نصائح لتحسين التقييم */}
+      <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
+        <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+          <span>💡</span>
+          نصائح لتحسين التقييم
+        </h3>
+        <ul className="space-y-2 text-sm text-blue-800">
+          <li className="flex items-start gap-2">
+            <span className="text-blue-500 mt-0.5">•</span>
+            <span>قبول الطلبات القريبة منك</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-500 mt-0.5">•</span>
+            <span>تقليل معدل رفض الطلبات</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-500 mt-0.5">•</span>
+            <span>تقديم خدمة ممتازة للعملاء</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-500 mt-0.5">•</span>
+            <span>الالتزام بالمواعيد</span>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 
@@ -275,6 +363,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
       case 'payments': return 'المحفظة';
       case 'history': return 'السجل';
       case 'rewards': return 'المكافآت';
+      case 'rating': return 'التقييم والأداء';
       default: return '';
     }
   };
@@ -355,6 +444,15 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
                 <MenuButton icon={<FaCreditCard />} label="المحفظة" onClick={() => setCurrentView('payments')} />
                 <Divider />
                 <MenuButton icon={<FaHistory />} label="سجل الرحلات" onClick={() => setCurrentView('history')} />
+                <Divider />
+                <MenuButton
+                  icon={<span className="text-yellow-500">⭐</span>}
+                  label="التقييم والأداء"
+                  onClick={() => setCurrentView('rating')}
+                  extra={profile.rejection_rate && parseFloat(profile.rejection_rate) > 20 ? (
+                    <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">تحذير</span>
+                  ) : undefined}
+                />
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-4">
@@ -396,6 +494,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
               {currentView === 'payments' && renderPayments()}
               {currentView === 'history' && renderHistory()}
               {currentView === 'rewards' && renderRewards()}
+              {currentView === 'rating' && renderRating()}
             </div>
           )}
         </div>
