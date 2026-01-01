@@ -5,7 +5,7 @@ import { Suspense, useState, useEffect, useRef, useCallback, useMemo } from 'rea
 import 'leaflet/dist/leaflet.css';
 import 'react-toastify/dist/ReactToastify.css';
 import './native-styles.css';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import {
   Order, OrderDetails, Payment, Service, Position,
   Profile, TrackingData, LastOrder, CaptainData, KotlinOrderData, OrderStatusResponse
@@ -518,15 +518,20 @@ export default function CaptainApp() {
     const handleOrderBroadcast = async (payload: any) => {
       console.log('Received Order Broadcast:', payload);
 
+      // Handle different payload formats
+      // Format 1: {event: 'new_order_request', payload: {order_id, lat, lon}}
+      // Format 2: {add1, cost, id, start_point, ...} (direct order object)
+      const orderData = payload.payload || payload;
+
       let lat: number | undefined, lon: number | undefined;
-      let order_id = payload.payload.order_id || payload.payload.id; // Fallback
+      let order_id = orderData.order_id || orderData.id;
 
       // Try to extract coordinates
-      if (payload.payload.lat && payload.payload.lon) {
-        lat = payload.payload.lat;
-        lon = payload.payload.lon;
-      } else if (payload.payload.start_point) {
-        const parts = payload.payload.start_point.split(',');
+      if (orderData.lat && orderData.lon) {
+        lat = orderData.lat;
+        lon = orderData.lon;
+      } else if (orderData.start_point) {
+        const parts = orderData.start_point.split(',');
         if (parts.length === 2) {
           lat = parseFloat(parts[0]);
           lon = parseFloat(parts[1]);
@@ -1741,6 +1746,20 @@ export default function CaptainApp() {
           </div>
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
 
     </div>
   );
