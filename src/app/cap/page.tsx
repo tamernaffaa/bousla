@@ -443,6 +443,34 @@ export default function CaptainApp() {
     return () => clearInterval(intervalId);
   }, [active, currentLocation, captainId]);
 
+  // استعادة الطلب النشط عند إعادة فتح التطبيق
+  useEffect(() => {
+    const restoreActiveOrder = async () => {
+      const activeOrder = localOrderStorage.getActiveOrder();
+
+      if (activeOrder) {
+        console.log(`🔄 Restoring active order ${activeOrder.id} from local storage`);
+
+        // استعادة حالة الطلب
+        setTrackingOrder(activeOrder as any);
+        setShowOrderTracking(true);
+        setActive(false); // إيقاف البحث عن طلبات جديدة
+
+        toast.info(`تم استعادة الطلب النشط #${activeOrder.id}`, {
+          position: "top-center",
+          autoClose: 3000
+        });
+
+        // محاولة المزامنة إذا كان الإنترنت متوفر
+        if (navigator.onLine) {
+          await localOrderStorage.syncOrder(activeOrder.id);
+        }
+      }
+    };
+
+    restoreActiveOrder();
+  }, []);
+
   // تحميل الأيقونات بعد تحميل القوائم
   useEffect(() => {
     if (menusLoaded) {
@@ -1165,8 +1193,16 @@ export default function CaptainApp() {
           date_time: new Date().toISOString()
         }));
 
+        // تحديث حالة الطلب محلياً
         if (status === "completed") {
+          // حذف الطلب من التخزين المحلي عند الانتهاء
+          localOrderStorage.deleteOrder(trackingOrder.id);
           sendToKotlin("delete_order_finish", "0");
+          console.log(`✅ Order ${trackingOrder.id} completed and removed from local storage`);
+        } else {
+          // تحديث الحالة محلياً للمراحل الأخرى
+          await localOrderStorage.updateOrder(trackingOrder.id, { status: status });
+          console.log(`💾 Local order status updated to: ${status}`);
         }
 
         console.log(`تم تحديث حالة الطلب ${trackingOrder.id} إلى ${status} بنجاح`);
