@@ -506,7 +506,50 @@ export default function CaptainApp() {
 
     return () => {
       supabase.removeChannel(matchingChannel);
+      return () => {
+        supabase.removeChannel(matchingChannel);
+      };
+    }, [active, currentLocation, captainId, zoneRadius]);
+
+  // 🔄 Polling Listener (Fallback for Weak Connection)
+  useEffect(() => {
+    if (!active || !currentLocation || !captainId) return;
+
+    const pollOrders = async () => {
+      // 1. Fetch "pending" orders from DB
+      const availableOrders = await ordersApi.getAvailableOrders();
+
+      // 2. Filter locally by Zone
+      availableOrders.forEach(order => {
+        if (!order.start_point) return;
+        const [lat, lon] = order.start_point.split(',').map(Number);
+        if (isNaN(lat) || isNaN(lon)) return;
+
+        const dist = calculateDistance(currentLocation[0], currentLocation[1], lat, lon);
+
+        // 3. If match & not already notified (simplification: just notify)
+        if (dist <= zoneRadius) {
+          // Check if we should ignore (maybe already accepted locally? - basic version here)
+          toast.info(`🔔 طلب جديد (محدث) قريب منك! (${dist.toFixed(1)} كم)`, {
+            position: "top-center",
+            autoClose: 5000,
+            onClick: () => {
+              if ((window as any).handleNewOrder) {
+                (window as any).handleNewOrder(order.id);
+              }
+            }
+          });
+        }
+      });
     };
+
+    // Run every 15 seconds
+    const intervalId = setInterval(pollOrders, 15000);
+
+    // Initial call
+    pollOrders();
+
+    return () => clearInterval(intervalId);
   }, [active, currentLocation, captainId, zoneRadius]);
 
   // Callbacks
