@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { Profile, Service, Payment, LastOrder } from '../types';
 import Image from 'next/image';
 import { extractMunicipality } from '../mapUtils';
+import { FaUser, FaCreditCard, FaHistory, FaGift, FaList, FaLock, FaSignOutAlt, FaChevronRight, FaTimes, FaCar, FaEdit, FaSync } from 'react-icons/fa';
 
 interface ProfileMenuProps {
   profile: Profile;
@@ -89,26 +90,27 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   const renderServices = () => (
     <div className="space-y-4">
       {services.map(service => (
-        <div key={service.id} className="bg-white p-4 rounded-lg shadow border border-gray-100 flex items-center justify-between">
-          <div className="flex items-center space-x-3 rtl:space-x-reverse">
-            <Image
-              src={service.photo1 && service.photo1.trim() !== '' ? service.photo1 : '/logo.png'}
-              alt={service.name1}
-              width={48}
-              height={48}
-              className="object-cover rounded-lg"
-            />
+        <div key={service.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+          <div className="flex items-center space-x-4 rtl:space-x-reverse">
+            <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
+              <Image
+                src={service.photo1 && service.photo1.trim() !== '' ? service.photo1 : '/logo.png'}
+                alt={service.name1}
+                fill
+                className="object-cover"
+              />
+            </div>
             <div className="text-right mr-3">
-              <h3 className="font-medium text-gray-800">{service.name1}</h3>
-              <p className="text-sm text-gray-500">{service.m_cost} ل.س/دقيقة - {service.km} كم</p>
+              <h3 className="font-bold text-gray-800">{service.name1}</h3>
+              <p className="text-xs text-gray-500 font-bold mt-1 bg-gray-100 px-2 py-0.5 rounded-full inline-block">{service.m_cost} ل.س/دقيقة</p>
             </div>
           </div>
           <button
             onClick={() => onToggleService(service)}
             disabled={isUpdatingService === service.id}
-            className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none ${service.active ? 'bg-green-500' : 'bg-gray-300'} ${isUpdatingService === service.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            className={`relative inline-flex items-center h-7 rounded-full w-12 transition-colors focus:outline-none ${service.active ? 'bg-black' : 'bg-gray-200'} ${isUpdatingService === service.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
           >
-            <span className={`inline-block w-5 h-5 transform transition-transform bg-white rounded-full shadow ${service.active ? 'translate-x-5' : 'translate-x-0'}`} />
+            <span className={`inline-block w-5 h-5 transform transition-transform bg-white rounded-full shadow-sm ml-1 ${service.active ? 'translate-x-1' : 'translate-x-[22px]'}`} />
             {isUpdatingService === service.id && <span className="absolute inset-0 flex items-center justify-center"><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div></span>}
           </button>
         </div>
@@ -119,9 +121,9 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   const renderPayments = () => {
     const getPaymentTypeInfo = (type: string) => {
       const typeLower = type.toLowerCase();
-      if (typeLower.includes('withdrawal') || typeLower.includes('سحب')) return { text: 'سحب', bgColor: 'bg-red-50', textColor: 'text-red-800', borderColor: 'border-red-100' };
-      if (typeLower.includes('payment') || typeLower.includes('دفع') || typeLower.includes('تسديد')) return { text: 'تسديد', bgColor: 'bg-green-50', textColor: 'text-green-800', borderColor: 'border-green-100' };
-      return { text: type, bgColor: 'bg-gray-50', textColor: 'text-gray-800', borderColor: 'border-gray-100' };
+      if (typeLower.includes('withdrawal') || typeLower.includes('سحب')) return { text: 'سحب', bgColor: 'bg-red-50', textColor: 'text-red-600', borderColor: 'border-red-100', icon: '⬇️' };
+      if (typeLower.includes('payment') || typeLower.includes('دفع') || typeLower.includes('تسديد')) return { text: 'تسديد', bgColor: 'bg-green-50', textColor: 'text-green-600', borderColor: 'border-green-100', icon: '⬆️' };
+      return { text: type, bgColor: 'bg-gray-50', textColor: 'text-gray-800', borderColor: 'border-gray-100', icon: '📄' };
     };
     const formatNumber = (num: number) => new Intl.NumberFormat('ar-SA', { maximumFractionDigits: 0 }).format(num);
     const calculateTotal = () => {
@@ -136,80 +138,100 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
     };
 
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {/* Month Filter */}
-        <div className="mb-4 flex overflow-x-auto pb-2 space-x-2 rtl:space-x-reverse no-scrollbar">
-          <button onClick={() => onFilterMonth(null)} className={`px-3 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${!filterMonth ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>الكل</button>
+        <div className="mb-4 flex overflow-x-auto pb-2 space-x-2 rtl:space-x-reverse no-scrollbar items-center">
+          <span className="text-xs font-bold text-gray-400 ml-2">التاريخ:</span>
+          <button onClick={() => onFilterMonth(null)} className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${!filterMonth ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>الكل</button>
           {availableMonths.map(month => (
-            <button key={month} onClick={() => onFilterMonth(month)} className={`px-3 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${filterMonth === month ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>{month}</button>
+            <button key={month} onClick={() => onFilterMonth(month)} className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${filterMonth === month ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{month}</button>
           ))}
         </div>
+
+        <div className="bg-black text-white p-5 rounded-2xl shadow-lg mb-4 flex justify-between items-center">
+          <div>
+            <p className="text-yellow-400 text-xs font-bold mb-1">الرصيد الصافي</p>
+            <h3 className="text-2xl font-mono font-bold">{formatNumber(calculateTotal())} <span className="text-sm font-sans">ل.س</span></h3>
+          </div>
+          <div className="h-10 w-10 bg-yellow-400 rounded-full flex items-center justify-center text-black">
+            <FaCreditCard />
+          </div>
+        </div>
+
         {/* List */}
         {payments.length > 0 ? payments.map(payment => {
           const typeInfo = getPaymentTypeInfo(payment.type1);
           return (
-            <div key={payment.id} className={`p-3 rounded-lg shadow border ${typeInfo.borderColor} ${typeInfo.bgColor}`}>
-              <div className="flex justify-between items-center">
-                <span className={`text-xs font-medium px-2 py-1 rounded-full ${typeInfo.bgColor} ${typeInfo.textColor}`}>{typeInfo.text}</span>
-                <span className={`font-bold ${typeInfo.textColor}`}>{formatNumber(parseFloat(payment.mony))} ل.س</span>
+            <div key={payment.id} className="p-4 rounded-xl shadow-sm border border-gray-100 hover:border-black transition-colors bg-white group">
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-3">
+                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${typeInfo.bgColor}`}>{typeInfo.icon}</span>
+                  <span className="font-bold text-gray-800">{typeInfo.text}</span>
+                </div>
+                <span className={`font-mono font-bold text-lg ${typeInfo.textColor}`}>{formatNumber(parseFloat(payment.mony))}</span>
               </div>
-              <div className="mt-2 text-sm text-gray-600">{new Date(payment.insert_time).toLocaleDateString('en-US')}</div>
-              {payment.note && <div className="mt-1 text-sm text-gray-500 truncate">{payment.note}</div>}
+              <div className="flex justify-between items-center text-xs text-gray-400 mt-2 px-1">
+                <span>{new Date(payment.insert_time).toLocaleDateString('en-US')}</span>
+                {payment.note && <span className="max-w-[150px] truncate">{payment.note}</span>}
+              </div>
             </div>
           );
-        }) : <div className="text-center py-8 text-gray-500">لا توجد دفعات</div>}
-
-        <div className="border-t border-gray-200 p-4 bg-gray-50 mt-4 rounded">
-          <div className="flex justify-between items-center">
-            <span className="font-medium">المجموع:</span>
-            <span className="font-bold text-lg">{formatNumber(calculateTotal())} ل.س</span>
-          </div>
-        </div>
+        }) : <div className="text-center py-12 text-gray-400 flex flex-col items-center gap-2"><div className="text-4xl">📭</div><div>لا توجد حركات مالية</div></div>}
       </div>
     );
   };
 
   const renderRewards = () => (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* إجمالي المكافآت */}
-      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg p-6 mb-4 text-white shadow-lg">
-        <p className="text-sm opacity-90">إجمالي مكافآتك</p>
-        <p className="text-4xl font-bold">{totalRewards.toFixed(0)} ل.س</p>
-        <p className="text-xs opacity-75 mt-2">المكافآت المكتسبة من العروض الترويجية</p>
+      <div className="bg-black text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400 rounded-full blur-3xl opacity-20 -mr-10 -mt-10"></div>
+        <div className="relative z-10">
+          <p className="text-yellow-400 text-sm font-bold uppercase tracking-wider mb-2">رصيد المكافآت</p>
+          <p className="text-4xl font-mono font-bold mb-4">{totalRewards.toFixed(0)} <span className="text-lg">ل.س</span></p>
+          <div className="inline-block bg-white/10 backdrop-blur-md px-3 py-1 rounded-lg text-xs border border-white/10">
+            المكافآت المكتسبة
+          </div>
+        </div>
       </div>
 
-      <h3 className="font-bold text-gray-800">العروض المتاحة</h3>
+      <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
+        <FaGift className="text-yellow-500" />
+        العروض النشطة
+      </h3>
+
       {rewards.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-100">
-          لا توجد عروض متاحة حالياً
+        <div className="text-center py-10 bg-gray-50 rounded-2xl border-dashed border-2 border-gray-200">
+          <p className="text-4xl mb-2">🎁</p>
+          <p className="text-gray-500 font-bold opacity-70">لا توجد عروض حالياً</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {rewards.map(reward => (
-            <div key={reward.id} className="bg-white rounded-lg border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-2">
+            <div key={reward.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-lg hover:border-yellow-400 transition-all group">
+              <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
-                  <h4 className="font-bold text-gray-800">{reward.name}</h4>
-                  <p className="text-sm text-gray-500 mt-1 lines-clamp-2">
+                  <h4 className="font-black text-lg text-gray-800 group-hover:text-yellow-600 transition-colors">{reward.name}</h4>
+                  <p className="text-sm text-gray-500 mt-1 leading-relaxed">
                     {reward.description_ar || reward.description}
                   </p>
                 </div>
-                <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold whitespace-nowrap mr-2">
+                <span className="bg-black text-yellow-400 px-3 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap mr-3 shadow-md">
                   +{reward.value}
                 </span>
               </div>
 
               {/* القيود */}
-              <div className="flex flex-wrap gap-1 mt-2">
+              <div className="flex flex-wrap gap-2 mt-4 text-xs font-bold">
                 {reward.zone_ids && reward.zone_ids.length > 0 && (
-                  <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px]">📍 {reward.zone_ids.length} منطقة</span>
+                  <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md border border-blue-100">📍 {reward.zone_ids.length} منطقة</span>
                 )}
                 {reward.time_start && (
-                  <span className="bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-[10px]">⏰ {reward.time_start.slice(0, 5)}</span>
+                  <span className="bg-orange-50 text-orange-600 px-2 py-1 rounded-md border border-orange-100">⏰ {reward.time_start.slice(0, 5)}</span>
                 )}
-              </div>
-              <div className="mt-2 pt-2 border-t border-gray-50 text-[10px] text-gray-400">
-                ينتهي: {new Date(reward.end_date).toLocaleDateString('ar-SA')}
+                <span className="bg-gray-50 text-gray-500 px-2 py-1 rounded-md border border-gray-100 ml-auto">
+                  ينتهي: {new Date(reward.end_date).toLocaleDateString('ar-SA')}
+                </span>
               </div>
             </div>
           ))}
@@ -218,143 +240,159 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
     </div>
   );
 
-  const renderHistory = () => {
-    // Simplification: Using specific filter logic inside LastOrdersMenu locally would be better, 
-    // but for this refactor I will implement a basic view of the passed 'lastOrders' list.
-    // Assuming 'lastOrders' is already filtered or just showing all for simplicity, 
-    // OR we can move the filter state up to page.tsx if needed. 
-    // For now, let's just list them.
-
-    return (
-      <div className="space-y-3">
-        {lastOrders.length > 0 ? lastOrders.map(order => (
-          <div key={order.id} onClick={() => onOrderClick(order.id)} className="bg-white p-3 rounded-lg shadow border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors text-right">
-            <div className="mb-2">
-              <p className="font-medium">من: {extractMunicipality(order.start_text)}</p>
-              <p className="font-medium">إلى: {extractMunicipality(order.end_text)}</p>
-            </div>
-            <div className="grid grid-cols-4 gap-1 text-center text-sm border-t pt-2">
-              <span className="font-medium">{order.real_km} كم</span>
-              <span className="font-medium text-blue-500">{order.real_price}</span>
-            </div>
+  const renderHistory = () => (
+    <div className="space-y-3">
+      {lastOrders.length > 0 ? lastOrders.map(order => (
+        <div key={order.id} onClick={() => onOrderClick(order.id)} className="group bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-black cursor-pointer transition-all">
+          <div className="flex justify-between items-center mb-3">
+            <span className="px-2 py-1 bg-gray-100 rounded text-xs font-bold text-gray-500">#{order.id}</span>
+            <span className="font-mono font-bold text-lg">{order.real_price} ل.س</span>
           </div>
-        )) : <div className="text-center py-8 text-gray-500">لا توجد طلبات</div>}
-      </div>
-    );
-  };
+          <div className="space-y-2 relative border-r-2 border-dashed border-gray-200 pr-4 mr-1">
+            <div className="absolute -right-[5px] top-1 w-2 h-2 bg-black rounded-full ring-2 ring-white"></div>
+            <p className="font-bold text-sm text-gray-800">{extractMunicipality(order.start_text)}</p>
 
-  // Icons
-  const Icons = {
-    Edit: () => <svg className="w-6 h-6 text-gray-600 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
-    Payment: () => <svg className="w-6 h-6 text-gray-600 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>,
-    History: () => <svg className="w-6 h-6 text-gray-600 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-    List: () => <svg className="w-6 h-6 text-gray-600 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>,
-    Lock: () => <svg className="w-6 h-6 text-gray-600 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>,
-    Logout: () => <svg className="w-6 h-6 text-red-500 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>,
-    ChevronLeft: () => <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>,
-    Back: () => <svg className="w-6 h-6 text-white cursor-pointer" onClick={() => setCurrentView('main')} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
-    Refresh: ({ loading, onClick }: { loading: boolean, onClick: () => void }) => (
-      <button onClick={onClick} disabled={loading} className="p-1 text-white hover:bg-blue-700 rounded-full transition-colors">
-        {loading ? <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-          : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>}
-      </button>
-    )
-  };
+            <div className="absolute -right-[5px] bottom-1 w-2 h-2 bg-yellow-400 rounded-full ring-2 ring-white"></div>
+            <p className="font-bold text-sm text-gray-600">{extractMunicipality(order.end_text)}</p>
+          </div>
+          <div className="flex justify-end mt-3 pt-3 border-t border-gray-50">
+            <span className="text-xs font-bold text-gray-400 flex items-center gap-1 group-hover:text-black transition-colors">
+              التفاصيل <FaChevronRight className="text-[10px]" />
+            </span>
+          </div>
+        </div>
+      )) : <div className="text-center py-12 text-gray-400">لا توجد طلبات سابقة</div>}
+    </div>
+  );
 
   const getHeaderTitle = () => {
     switch (currentView) {
-      case 'services': return 'تعديل خدماتي';
-      case 'payments': return 'دفعاتي';
-      case 'history': return 'الطلبات السابقة';
-      case 'rewards': return 'المكافآت والحوافز';
+      case 'services': return 'خدماتي';
+      case 'payments': return 'المحفظة';
+      case 'history': return 'السجل';
+      case 'rewards': return 'المكافآت';
       default: return '';
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50" style={{ direction: 'ltr' }}>
-      {/* خلفية سوداء شفافة */}
-      <div className="absolute left-0 right-0 transition-opacity" style={{ top: '4rem', height: 'calc(100vh - 4rem)', backgroundColor: 'rgba(0,0,0,0.1)', backdropFilter: 'blur(8px)' }} onClick={onClose} />
-      {/* القائمة الجانبية */}
+    <div className="fixed inset-0 z-50 font-sans" dir="rtl">
+      {/* Black Overlay */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+
+      {/* Side Menu Panel */}
       <div
-        className="fixed left-0 top-16 w-3/4 max-w-xs bg-white h-[calc(100vh-4rem)] shadow-2xl flex flex-col animate-slide-in-left z-50"
+        className="fixed top-0 bottom-0 right-0 w-[85%] max-w-sm bg-gray-50 shadow-2xl flex flex-col animate-slide-in-right z-50 rounded-l-3xl overflow-hidden"
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
       >
         {/* Header */}
-        <div className="bg-blue-600 text-white p-6 pt-12 pb-8 shadow-md">
+        <div className="bg-black text-white p-6 pt-10 pb-8 shadow-2xl relative">
+          <div className="absolute top-0 left-0 p-4">
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors">
+              <FaTimes />
+            </button>
+          </div>
+
           {currentView === 'main' ? (
-            <div className="flex items-center mb-4">
-              <div className="w-16 h-16 bg-white rounded-full overflow-hidden border-2 border-white shadow-md">
-                {isValidImageUrl(profile.photo) ? (
-                  <Image src={profile.photo as string} alt="صورة الكابتن" width={64} height={64} className="object-cover w-full h-full"
-                    onError={(e) => { (e.target as HTMLImageElement).src = defaultAvatar; }} />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-2xl bg-blue-100 text-blue-600 font-bold">{profile.name?.charAt(0) || 'ك'}</div>
-                )}
+            <div className="flex flex-col items-center mt-4">
+              <div className="w-20 h-20 bg-white rounded-full p-1 mb-4 shadow-lg relative">
+                <div className="w-full h-full rounded-full overflow-hidden border-2 border-white relative">
+                  {isValidImageUrl(profile.photo) ? (
+                    <Image src={profile.photo as string} alt="Profile" fill className="object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = defaultAvatar; }} />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center"><FaUser className="text-gray-400 text-3xl" /></div>
+                  )}
+                </div>
+                <div className="absolute bottom-1 right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-black"></div>
               </div>
-              <div className="mr-4">
-                <h2 className="text-lg font-bold text-white leading-tight">{profile.name || "اسم الكابتن"}</h2>
-                <p className="text-blue-100 text-sm mt-1">{profile.phone || "رقم الهاتف غير متوفر"}</p>
+              <h2 className="text-2xl font-black">{profile.name || "الكابتن"}</h2>
+              <p className="text-gray-400 text-sm mt-1">{profile.phone}</p>
+
+              {/* Quick Stats in Header */}
+              <div className="flex gap-4 mt-6 w-full justify-center">
+                <div className="bg-white/10 rounded-xl px-4 py-2 text-center backdrop-blur-sm flex-1">
+                  <div className="text-yellow-400 font-bold text-lg">4.9</div>
+                  <div className="text-[10px] text-gray-400">التقييم</div>
+                </div>
+                <div className="bg-white/10 rounded-xl px-4 py-2 text-center backdrop-blur-sm flex-1">
+                  <div className="text-white font-bold text-lg">95%</div>
+                  <div className="text-[10px] text-gray-400">القبول</div>
+                </div>
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Icons.Back />
-                <h2 className="text-xl font-bold mr-3">{getHeaderTitle()}</h2>
+              <div className="flex items-center gap-4">
+                <button onClick={() => setCurrentView('main')} className="text-white hover:text-yellow-400 transition-colors">
+                  <FaChevronRight className="text-xl rotate-180" />
+                </button>
+                <h2 className="text-2xl font-black">{getHeaderTitle()}</h2>
               </div>
-              {currentView === 'services' && <Icons.Refresh loading={isRefreshingServices} onClick={onRefreshServices} />}
-              {currentView === 'payments' && <Icons.Refresh loading={isRefreshingPayments} onClick={onRefreshPayments} />}
-              {currentView === 'history' && <Icons.Refresh loading={isRefreshingLastOrders} onClick={onRefreshLastOrders} />}
-              {currentView === 'rewards' && <Icons.Refresh loading={isRefreshingRewards} onClick={onRefreshRewards} />}
+              <div className="bg-white/10 p-2 rounded-full hover:bg-white/20 cursor-pointer transition-colors" onClick={
+                currentView === 'services' ? onRefreshServices :
+                  currentView === 'payments' ? onRefreshPayments :
+                    currentView === 'history' ? onRefreshLastOrders :
+                      currentView === 'rewards' ? onRefreshRewards : undefined
+              }>
+                <FaSync className={`${(isRefreshingServices || isRefreshingPayments || isRefreshingLastOrders || isRefreshingRewards) ? 'animate-spin' : ''}`} />
+              </div>
             </div>
           )}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto py-2 bg-white">
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto bg-gray-50 relative">
           {currentView === 'main' && (
-            <div className="space-y-1">
-              <button onClick={() => setCurrentView('services')} className="w-full flex items-center p-4 hover:bg-gray-50 active:bg-blue-50 transition-colors ripple">
-                <Icons.Edit /><span className="text-gray-800 text-base font-medium flex-1 text-right mr-3">تعديل خدماتي</span><Icons.ChevronLeft />
-              </button>
-              <button onClick={() => setCurrentView('payments')} className="w-full flex items-center p-4 hover:bg-gray-50 active:bg-blue-50 transition-colors ripple">
-                <Icons.Payment /><span className="text-gray-800 text-base font-medium flex-1 text-right mr-3">دفعاتي</span><Icons.ChevronLeft />
-              </button>
-              <button onClick={() => setCurrentView('history')} className="w-full flex items-center p-4 hover:bg-gray-50 active:bg-blue-50 transition-colors ripple">
-                <Icons.History /><span className="text-gray-800 text-base font-medium flex-1 text-right mr-3">الطلبات السابقة</span><Icons.ChevronLeft />
-              </button>
-              <button
-                onClick={() => setCurrentView('rewards')}
-                className="w-full flex items-center p-4 hover:bg-gray-50 active:bg-yellow-50 transition-colors ripple"
-              >
-                <svg className="w-6 h-6 text-yellow-500 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-gray-800 text-base font-medium flex-1 text-right mr-3">المكافآت والحوافز</span>
-                <Icons.ChevronLeft />
-              </button>
-              <button onClick={onvertioal_order} className="w-full flex items-center p-4 hover:bg-gray-50 active:bg-blue-50 transition-colors ripple">
-                <Icons.List /><span className="text-gray-800 text-base font-medium flex-1 text-right mr-3">طلب افتراضي</span><Icons.ChevronLeft />
-              </button>
-              <button onClick={onShowChangePassword} className="w-full flex items-center p-4 hover:bg-gray-50 active:bg-blue-50 transition-colors ripple">
-                <Icons.Lock /><span className="text-gray-800 text-base font-medium flex-1 text-right mr-3">تغيير كلمة المرور</span><Icons.ChevronLeft />
-              </button>
-              <hr className="my-2 border-gray-100" />
-              <button onClick={onlogout_btn} className="w-full flex items-center p-4 hover:bg-red-50 active:bg-red-100 transition-colors ripple">
-                <Icons.Logout /><span className="text-red-600 text-base font-medium flex-1 text-right mr-3">تسجيل الخروج</span>
-              </button>
+            <div className="p-4 space-y-3">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <MenuButton icon={<FaCar />} label="خدماتي" onClick={() => setCurrentView('services')} />
+                <Divider />
+                <MenuButton icon={<FaCreditCard />} label="المحفظة" onClick={() => setCurrentView('payments')} />
+                <Divider />
+                <MenuButton icon={<FaHistory />} label="سجل الرحلات" onClick={() => setCurrentView('history')} />
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-4">
+                <MenuButton icon={<FaGift className="text-yellow-500" />} label="المكافآت والعروض" onClick={() => setCurrentView('rewards')} extra={<span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">جديد</span>} />
+                <Divider />
+                <MenuButton icon={<FaList />} label="طلب افتراضي" onClick={onvertioal_order} />
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-4">
+                <MenuButton icon={<FaLock />} label="تغيير كلمة المرور" onClick={onShowChangePassword} />
+                <Divider />
+                <MenuButton icon={<FaSignOutAlt className="text-red-500" />} label="تسجيل الخروج" onClick={onlogout_btn} isDestructive />
+              </div>
+
+              <div className="text-center mt-8 pb-8">
+                <p className="text-xs text-gray-300 font-bold">الإصدار 2.4.0 (Beta)</p>
+              </div>
             </div>
           )}
 
-          <div className="p-4">
-            {currentView === 'services' && renderServices()}
-            {currentView === 'payments' && renderPayments()}
-            {currentView === 'history' && renderHistory()}
-            {currentView === 'rewards' && renderRewards()}
-          </div>
+          {currentView !== 'main' && (
+            <div className="p-5 pb-20 animate-fade-in">
+              {currentView === 'services' && renderServices()}
+              {currentView === 'payments' && renderPayments()}
+              {currentView === 'history' && renderHistory()}
+              {currentView === 'rewards' && renderRewards()}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
+
+// Helper Components
+const MenuButton = ({ icon, label, onClick, isDestructive = false, extra }: any) => (
+  <button onClick={onClick} className="w-full flex items-center p-4 hover:bg-yellow-50 active:bg-yellow-100 transition-colors group">
+    <span className={`text-xl ml-4 ${isDestructive ? 'text-red-500' : 'text-gray-400 group-hover:text-black'}`}>{icon}</span>
+    <span className={`flex-1 text-right font-bold ${isDestructive ? 'text-red-500' : 'text-gray-700'}`}>{label}</span>
+    {extra}
+    <FaChevronRight className={`text-gray-300 text-sm mr-2 rotate-180 ${isDestructive ? 'hidden' : ''}`} />
+  </button>
+);
+
+const Divider = () => <div className="h-[1px] bg-gray-50 mx-4" />;
