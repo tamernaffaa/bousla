@@ -319,6 +319,38 @@ const MapOnlyPage: React.FC = () => {
     }
   };
 
+  const handleMapClick = (lat: number, lon: number) => {
+    // Determine which point to update based on active field or context
+    // If we are in 'searching' mode or just idle with a field focused
+
+    // Reverse geocode to get a name (optional, but good UX)
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=ar`)
+      .then(res => res.json())
+      .then(data => {
+        const name = data.display_name ? data.display_name.split(',')[0] : "موقع محدد على الخريطة";
+        const loc = { name, lat, lon };
+
+        if (activeSearchField === 'start') {
+          setStartPoint(loc);
+          setActiveSearchField('end'); // Auto move to next step
+          toast.success("تم تحديد نقطة الانطلاق");
+        } else {
+          setEndPoint(loc);
+          toast.success("تم تحديد الوجهة");
+        }
+      })
+      .catch(() => {
+        // Fallback if offline or error
+        const loc = { name: "موقع محدد", lat, lon };
+        if (activeSearchField === 'start') {
+          setStartPoint(loc);
+          setActiveSearchField('end');
+        } else {
+          setEndPoint(loc);
+        }
+      });
+  };
+
   const getCurrentLocation = () => {
     if (!('geolocation' in navigator)) {
       toast.error("جهازك لا يدعم تحديد الموقع");
@@ -347,7 +379,21 @@ const MapOnlyPage: React.FC = () => {
             lat: pos.coords.latitude,
             lon: pos.coords.longitude
           });
-          toast.success("تم تحديد موقعك بنجاح", { duration: 2000 });
+
+          // Check accuracy
+          if (pos.coords.accuracy > 50) {
+            toast("دقة الموقع ضعيفة (" + Math.round(pos.coords.accuracy) + "م). يمكنك تحديد موقعك يدوياً على الخريطة.", {
+              icon: '⚠️',
+              duration: 5000,
+              style: {
+                borderRadius: '10px',
+                background: '#fff3cd',
+                color: '#856404',
+              },
+            });
+          } else {
+            toast.success("تم تحديد موقعك بدقة (" + Math.round(pos.coords.accuracy) + "م)", { duration: 2000 });
+          }
 
           // Auto-focus destination if start is set
           setActiveSearchField('end');
@@ -478,6 +524,8 @@ const MapOnlyPage: React.FC = () => {
           startPoint={startPoint}
           endPoint={endPoint}
           routeCoordinates={routeCoordinates}
+          isSelectingOnMap={true} // Always allow selection
+          onSelectLocation={handleMapClick}
         // Pass a ref or key to force updates if needed
         />
       </div>
