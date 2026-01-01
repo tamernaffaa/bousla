@@ -18,6 +18,7 @@ import { ProfileMenu as DynamicProfileMenu } from './menu/ProfileMenu';
 import { BetterLuckMessage } from './BetterLuckMessage';
 import { OrderDetailsModal } from './OrderDetailsModal';
 import OrderTrackingModal from './OrderTrackingModal';
+import { RejectedOrdersModal } from './RejectedOrdersModal';
 import { checkAndApplyRewards } from './lib/rewardHandler';
 
 // تحميل مكونات الخريطة بعد ذلك
@@ -79,6 +80,8 @@ export default function CaptainApp() {
   const [isRefreshingLastOrders, setIsRefreshingLastOrders] = useState(false);
   const [isRefreshingServices, setIsRefreshingServices] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetails | null>(null);
+  const [rejectedOrders, setRejectedOrders] = useState<{ order_id: number, reason: string, timestamp: number }[]>([]);
+  const [showRejectedOrders, setShowRejectedOrders] = useState(false);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
   const [acceptOrderStatus, setAcceptOrderStatus] = useState<'idle' | 'goodluck' | 'loading' | 'success' | 'error'>('idle');
@@ -514,6 +517,9 @@ export default function CaptainApp() {
   useEffect(() => {
     if (!active || !currentLocation || !captainId) return;
 
+    // Track notified orders to prevent duplicates
+    const notifiedOrdersSet = new Set<number>();
+
     // Helper function for handling order broadcasts
     const handleOrderBroadcast = async (payload: any) => {
       console.log('Received Order Broadcast:', payload);
@@ -543,12 +549,27 @@ export default function CaptainApp() {
         return;
       }
 
+      // Check if already notified or rejected
+      if (notifiedOrdersSet.has(order_id)) {
+        console.log(`⏭️ Order ${order_id} already notified, skipping...`);
+        return;
+      }
+
+      // Check if rejected
+      const isRejected = rejectedOrders.some(r => r.order_id === order_id);
+      if (isRejected) {
+        console.log(`🚫 Order ${order_id} was rejected, skipping...`);
+        return;
+      }
+
       // 1. Calculate Distance
       const dist = calculateDistance(currentLocation[0], currentLocation[1], lat, lon);
       console.log(`New Order ${order_id} at ${dist.toFixed(2)}km. Zone: ${zoneRadius}km`);
 
       // 2. Check Zone
       if (dist <= zoneRadius) {
+        // Mark as notified
+        notifiedOrdersSet.add(order_id);
         // 3. Notify Captain (UI)
         toast.info(`🔔 طلب جديد قريب منك! (${dist.toFixed(1)} كم)`, {
           position: "top-center",
@@ -1034,6 +1055,27 @@ export default function CaptainApp() {
       setAcceptOrderStatus('error');
     }
   }, [selectedOrder, captainId, clearRoute]);
+
+  // رفض الطلب
+  const handleRejectOrder = useCallback((orderId: number, reason: string = 'not_specified') => {
+    // Add to rejected orders list
+    setRejectedOrders(prev => [...prev, {
+      order_id: orderId,
+      reason: reason,
+      timestamp: Date.now()
+    }]);
+
+    // Close order details
+    setShowOrderDetails(false);
+    setSelectedOrder(null);
+
+    toast.info(`تم رفض الطلب #${orderId}`, {
+      position: "top-center",
+      autoClose: 3000
+    });
+
+    console.log(`❌ Order ${orderId} rejected. Reason: ${reason}`);
+  }, []);
 
   // إضافة دالة لإنهاء تتبع المسار
   const stopRouteTracking = useCallback(() => {
@@ -1668,6 +1710,8 @@ export default function CaptainApp() {
           onvertioal_order={() => { openOrderDetails(1); setShowProfile(false); }}
           onlogout_btn={() => sendToKotlin("logout", "")}
           onShowChangePassword={() => { setShowChangePassword(true); setShowProfile(false); }}
+          onShowRejectedOrders={() => { setShowRejectedOrders(true); setShowProfile(false); }}
+          rejectedOrdersCount={rejectedOrders.length}
         />
       )}
 
@@ -1745,6 +1789,23 @@ export default function CaptainApp() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Rejected Orders Modal */}
+      {showRejectedOrders && (
+        <RejectedOrdersModal
+          orders={rejectedOrders}
+          onClose={() => setShowRejectedOrders(false)}
+          onReconsider={(orderId) => {
+            // Remove from rejected list
+            setRejectedOrders(prev => prev.filter(r => r.order_id !== orderId));
+            toast.success(`تمت إعادة النظر في الطلب #${orderId}`);
+          }}
+          onPermanentDelete={(orderId) => {
+            setRejectedOrders(prev => prev.filter(r => r.order_id !== orderId));
+            toast.info(`تم حذف الطلب #${orderId} من القائمة`);
+          }}
+        />
       )}
 
       {/* Toast Notifications */}

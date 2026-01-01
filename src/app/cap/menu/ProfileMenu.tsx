@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { Profile, Service, Payment, LastOrder } from '../types';
 import Image from 'next/image';
 import { extractMunicipality } from '../mapUtils';
-import { FaUser, FaCreditCard, FaHistory, FaGift, FaList, FaLock, FaSignOutAlt, FaChevronRight, FaTimes, FaCar, FaEdit, FaSync } from 'react-icons/fa';
+import { FaUser, FaCreditCard, FaHistory, FaGift, FaList, FaLock, FaSignOutAlt, FaChevronRight, FaTimes, FaCar, FaEdit, FaSync, FaBan } from 'react-icons/fa';
 
 interface ProfileMenuProps {
   profile: Profile;
@@ -37,6 +37,8 @@ interface ProfileMenuProps {
   onvertioal_order: () => void;
   onlogout_btn: () => void;
   onShowChangePassword: () => void;
+  onShowRejectedOrders?: () => void;
+  rejectedOrdersCount?: number;
 }
 
 type MenuView = 'main' | 'services' | 'payments' | 'history' | 'rewards';
@@ -50,7 +52,9 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   lastOrders, isRefreshingLastOrders, onRefreshLastOrders, onOrderClick,
   onvertioal_order,
   onlogout_btn,
-  onShowChangePassword
+  onShowChangePassword,
+  onShowRejectedOrders,
+  rejectedOrdersCount = 0
 }) => {
   const [currentView, setCurrentView] = useState<MenuView>('main');
 
@@ -357,6 +361,21 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
                 <MenuButton icon={<FaGift className="text-yellow-500" />} label="المكافآت والعروض" onClick={() => setCurrentView('rewards')} extra={<span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">جديد</span>} />
                 <Divider />
                 <MenuButton icon={<FaList />} label="طلب افتراضي" onClick={onvertioal_order} />
+                {onShowRejectedOrders && (
+                  <>
+                    <Divider />
+                    <MenuButton
+                      icon={<FaBan className="text-red-500" />}
+                      label="الطلبات المرفوضة"
+                      onClick={onShowRejectedOrders}
+                      extra={rejectedOrdersCount > 0 ? (
+                        <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                          {rejectedOrdersCount}
+                        </span>
+                      ) : undefined}
+                    />
+                  </>
+                )}
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-4">
