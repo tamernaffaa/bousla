@@ -458,457 +458,453 @@ const MapOnlyPage: React.FC = () => {
     return Math.max(0, base - promo).toString();
   };
 
-  setViewState('searching_for_captain'); // Or handle UI logic for cancellations
-} catch (e: any) {
-  toast.error(e.message || "فشل إلغاء الطلب");
-}
-  };
 
-const submitOrder = async () => {
-  if (!chosenService || !startPoint || !endPoint || !tripInfo || !userId) return;
 
-  const loadingToast = toast.loading("جاري طلب الكابتن...");
-  try {
-    const cost = getFinalOrderPrice();
-    const promoDiscount = appliedPromotion?.discount || 0;
-    const serviceDiscount = parseFloat(chosenService.dis_cost) || 0;
+  const submitOrder = async () => {
+    if (!chosenService || !startPoint || !endPoint || !tripInfo || !userId) return;
 
-    const orderData = {
-      user_id: userId,
-      ser_chi_id: chosenService.id,
-      start_point: `${startPoint.lat},${startPoint.lon}`,
-      start_text: startPoint.name.substring(0, 100),
-      start_detlis: startPoint.name,
-      end_point: `${endPoint.lat},${endPoint.lon}`,
-      end_text: endPoint.name.substring(0, 100),
-      end_detlis: endPoint.name,
-      distance_km: tripInfo.distance.toFixed(1),
-      duration_min: Math.ceil(tripInfo.adjustedDuration),
-      status: "new_order",
-      start_time: new Date().toISOString(),
-      cost: cost,
-      km_price: chosenService.km,
-      min_price: chosenService.m_cost,
-      discount: (serviceDiscount + promoDiscount).toFixed(0),
-      add1: chosenService.add_cost,
-      f_km: chosenService.f_km
-    };
+    const loadingToast = toast.loading("جاري طلب الكابتن...");
+    try {
+      const cost = getFinalOrderPrice();
+      const promoDiscount = appliedPromotion?.discount || 0;
+      const serviceDiscount = parseFloat(chosenService.dis_cost) || 0;
 
-    const result = await submitOrderApi(orderData);
-    if (!result.success) throw new Error(result.message);
-
-    // Record Promotion
-    if (appliedPromotion?.promotion) {
-      const { supabase } = await import('../../lib/supabaseClient');
-      await supabase.from('promotion_usage').insert({
-        promotion_id: appliedPromotion.promotion.id,
+      const orderData = {
         user_id: userId,
-        order_id: result.order_id,
-        discount_amount: appliedPromotion.discount
-      });
-    }
+        ser_chi_id: chosenService.id,
+        start_point: `${startPoint.lat},${startPoint.lon}`,
+        start_text: startPoint.name.substring(0, 100),
+        start_detlis: startPoint.name,
+        end_point: `${endPoint.lat},${endPoint.lon}`,
+        end_text: endPoint.name.substring(0, 100),
+        end_detlis: endPoint.name,
+        distance_km: tripInfo.distance.toFixed(1),
+        duration_min: Math.ceil(tripInfo.adjustedDuration),
+        status: "new_order",
+        start_time: new Date().toISOString(),
+        cost: cost,
+        km_price: chosenService.km,
+        min_price: chosenService.m_cost,
+        discount: (serviceDiscount + promoDiscount).toFixed(0),
+        add1: chosenService.add_cost,
+        f_km: chosenService.f_km
+      };
 
-    toast.success(`تم الطلب!`, { id: loadingToast });
+      const result = await submitOrderApi(orderData);
+      if (!result.success) throw new Error(result.message);
 
-    // Notify Flutter
-    if (typeof window !== 'undefined' && (window as any).Android) {
-      (window as any).Android.postMessage(JSON.stringify({
-        action: 'order_created',
-        data: { ...orderData, order_id: result.order_id }
-      }));
-    }
-
-    // 🔄 Realtime Matching Start
-    setActiveOrderId(result.order_id);
-    setCaptainsFoundCount(0);
-    goToState('searching_for_captain');
-
-    // Broadcast to Captains
-    await supabase.channel('bousla_matching').send({
-      type: 'broadcast',
-      event: 'new_order',
-      payload: {
-        order_id: result.order_id,
-        lat: startPoint.lat,
-        lon: startPoint.lon,
-        service_id: chosenService.id
+      // Record Promotion
+      if (appliedPromotion?.promotion) {
+        const { supabase } = await import('../../lib/supabaseClient');
+        await supabase.from('promotion_usage').insert({
+          promotion_id: appliedPromotion.promotion.id,
+          user_id: userId,
+          order_id: result.order_id,
+          discount_amount: appliedPromotion.discount
+        });
       }
-    });
 
-  } catch (e: any) {
-    toast.error(e.message || "فشل الطلب", { id: loadingToast });
-  }
-};
+      toast.success(`تم الطلب!`, { id: loadingToast });
 
-const cancelOrder = async () => {
-  if (!activeOrderId) return;
-  const toastId = toast.loading('جاري إلغاء الطلب...');
-  try {
-    await supabase
-      .from('orders')
-      .update({ status: 'cancelled', cancelled_by: 'user' })
-      .eq('id', activeOrderId);
-
-    toast.success('تم إلغاء الطلب', { id: toastId });
-    setActiveOrderId(null);
-    setViewState('idle');
-  } catch (error) {
-    console.error(error);
-    toast.error('فشل الإلغاء', { id: toastId });
-  }
-};
-
-// 📡 Realtime Listeners for Matching
-useEffect(() => {
-  if (viewState !== 'searching_for_captain' || !activeOrderId) return;
-
-  // 1. Listen for Captains Found (Broadcast)
-  const matchingChannel = supabase.channel('bousla_matching')
-    .on('broadcast', { event: 'captain_found' }, (payload) => {
-      if (payload.payload.order_id === activeOrderId) {
-        setCaptainsFoundCount(prev => prev + 1);
+      // Notify Flutter
+      if (typeof window !== 'undefined' && (window as any).Android) {
+        (window as any).Android.postMessage(JSON.stringify({
+          action: 'order_created',
+          data: { ...orderData, order_id: result.order_id }
+        }));
       }
-    })
-    .subscribe();
 
-  // 2. Listen for Order Acceptance (DB Update)
-  const orderSubscription = supabase
-    .channel(`order_status_${activeOrderId}`)
-    .on(
-      'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${activeOrderId}` },
-      (payload) => {
-        const newStatus = payload.new.status;
-        if (newStatus === 'accepted' || newStatus === 'cap_accept') {
-          toast.success("تم قبول طلبك! الكابتن في الطريق 🚕");
-          // Redirect or update UI to tracking...
-          // For now we will just show a success message or move to a 'tracking' state if implemented
-          // Since tracking isn't part of this specific request scope fully, let's keep it simple
-          // or maybe redirect to a tracking page/modal.
-          // The user asked to "handle captain acceptance display".
+      // 🔄 Realtime Matching Start
+      setActiveOrderId(result.order_id);
+      setCaptainsFoundCount(0);
+      goToState('searching_for_captain');
 
-          // Let's assume we maintain the state or redirect.
-          // For this step, I will just toast.
+      // Broadcast to Captains
+      await supabase.channel('bousla_matching').send({
+        type: 'broadcast',
+        event: 'new_order',
+        payload: {
+          order_id: result.order_id,
+          lat: startPoint.lat,
+          lon: startPoint.lon,
+          service_id: chosenService.id
         }
-      }
-    )
-    .subscribe();
+      });
 
-  return () => {
-    supabase.removeChannel(matchingChannel);
-    supabase.removeChannel(orderSubscription);
+    } catch (e: any) {
+      toast.error(e.message || "فشل الطلب", { id: loadingToast });
+    }
   };
-}, [viewState, activeOrderId]);
 
-return (
-  <div className="relative h-screen w-full overflow-hidden bg-gray-100 flex flex-col" dir="rtl">
+  const cancelOrder = async () => {
+    if (!activeOrderId) return;
+    const toastId = toast.loading('جاري إلغاء الطلب...');
+    try {
+      await supabase
+        .from('orders')
+        .update({ status: 'cancelled', cancelled_by: 'user' })
+        .eq('id', activeOrderId);
 
-    {/* 🗺️ MAP LAYER (Background) */}
-    <div className="absolute inset-0 z-0">
-      <MapComponent
-        startPoint={startPoint}
-        endPoint={endPoint}
-        routeCoordinates={routeCoordinates}
-        isSelectingOnMap={viewState !== 'searching_for_captain'} // Disable selection when searching
-        onSelectLocation={handleMapClick}
-      // Pass a ref or key to force updates if needed
-      />
-    </div>
+      toast.success('تم إلغاء الطلب', { id: toastId });
+      setActiveOrderId(null);
+      setViewState('idle');
+    } catch (error) {
+      console.error(error);
+      toast.error('فشل الإلغاء', { id: toastId });
+    }
+  };
 
-    {/* 🔙 Floating Back Button (If searching) */}
-    {viewState === 'searching' && (
-      <button
-        onClick={() => window.history.back()}
-        className="absolute top-4 right-4 z-50 bg-white p-3 rounded-full shadow-lg"
-      >
-        <FaArrowLeft className="text-gray-700" />
-      </button>
-    )}
+  // 📡 Realtime Listeners for Matching
+  useEffect(() => {
+    if (viewState !== 'searching_for_captain' || !activeOrderId) return;
 
-    {/* 🖥️ UI LAYER (Foreground) */}
-    <AnimatePresence mode="wait">
+    // 1. Listen for Captains Found (Broadcast)
+    const matchingChannel = supabase.channel('bousla_matching')
+      .on('broadcast', { event: 'captain_found' }, (payload) => {
+        if (payload.payload.order_id === activeOrderId) {
+          setCaptainsFoundCount(prev => prev + 1);
+        }
+      })
+      .subscribe();
 
-      {/* 1️⃣ IDLE STATE: "Where to?" */}
-      {viewState === 'idle' && (
-        <motion.div
-          initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
-          className="absolute bottom-0 left-0 right-0 z-20 p-4"
-        >
-          <div className="bg-white rounded-t-3xl shadow-xl w-full p-6 pb-12">
-            <DraggableBar />
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">إلى أين تريد الذهاب؟</h2>
+    // 2. Listen for Order Acceptance (DB Update)
+    const orderSubscription = supabase
+      .channel(`order_status_${activeOrderId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${activeOrderId}` },
+        (payload) => {
+          const newStatus = payload.new.status;
+          if (newStatus === 'accepted' || newStatus === 'cap_accept') {
+            toast.success("تم قبول طلبك! الكابتن في الطريق 🚕");
+            // Redirect or update UI to tracking...
+            // For now we will just show a success message or move to a 'tracking' state if implemented
+            // Since tracking isn't part of this specific request scope fully, let's keep it simple
+            // or maybe redirect to a tracking page/modal.
+            // The user asked to "handle captain acceptance display".
 
-            <div
-              onClick={() => { goToState('searching'); setActiveSearchField('end'); }}
-              className="bg-gray-100 p-4 rounded-xl flex items-center gap-3 cursor-pointer hover:bg-gray-200 transition-colors"
-            >
-              <FaSearch className="text-gray-800 text-lg" />
-              <span className="text-gray-500 font-medium text-lg">ابحث عن وجهة...</span>
-            </div>
+            // Let's assume we maintain the state or redirect.
+            // For this step, I will just toast.
+          }
+        }
+      )
+      .subscribe();
 
-            {/* Saved Places Quick Access */}
-            <div className="mt-6">
-              <LocationItem
-                icon={<FaLocationArrow />}
-                title="منزلي"
-                subtitle="تعيين موقع المنزل"
-                onClick={() => { }}
-              />
-              <LocationItem
-                icon={<FaHistory />}
-                title="آخر رحلة"
-                subtitle="دمشق, ساحة الأمويين"
-                onClick={() => { }}
-                isLast
-              />
-            </div>
-          </div>
-        </motion.div>
-      )}
+    return () => {
+      supabase.removeChannel(matchingChannel);
+      supabase.removeChannel(orderSubscription);
+    };
+  }, [viewState, activeOrderId]);
 
-      {/* 2️⃣ SEARCHING STATE: Expanded Input */}
+  return (
+    <div className="relative h-screen w-full overflow-hidden bg-gray-100 flex flex-col" dir="rtl">
+
+      {/* 🗺️ MAP LAYER (Background) */}
+      <div className="absolute inset-0 z-0">
+        <MapComponent
+          startPoint={startPoint}
+          endPoint={endPoint}
+          routeCoordinates={routeCoordinates}
+          isSelectingOnMap={viewState !== 'searching_for_captain'} // Disable selection when searching
+          onSelectLocation={handleMapClick}
+        // Pass a ref or key to force updates if needed
+        />
+      </div>
+
+      {/* 🔙 Floating Back Button (If searching) */}
       {viewState === 'searching' && (
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="absolute inset-0 z-30 bg-white flex flex-col"
+        <button
+          onClick={() => window.history.back()}
+          className="absolute top-4 right-4 z-50 bg-white p-3 rounded-full shadow-lg"
         >
-          <div className="p-4 shadow-sm z-10 bg-white">
-            <div className="flex items-center gap-4 mb-4">
-              <button onClick={() => window.history.back()}><FaArrowLeft className="text-xl" /></button>
-              <h2 className="text-xl font-bold">تحديد المسار</h2>
-            </div>
-
-            <div className="flex gap-3">
-              {/* Timeline visual */}
-              <div className="flex flex-col items-center pt-2">
-                <div className="w-3 h-3 bg-gray-300 rounded-full" />
-                <div className="w-0.5 h-12 bg-gray-200" />
-                <div className="w-3 h-3 bg-black rounded-sm" />
-              </div>
-
-              <div className="flex-1 flex flex-col gap-3">
-                {/* FROM INPUT */}
-                <div className="relative">
-                  <input
-                    value={activeSearchField === 'start' ? searchQuery : (startPoint?.name || '')}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => { setActiveSearchField('start'); setSearchQuery(''); goToState('searching'); }}
-                    placeholder="الموقع الحالي"
-                    className={`w-full bg-gray-100 p-3 rounded-lg text-sm transition-all outline-none ${activeSearchField === 'start' ? 'ring-2 ring-yellow-400' : ''}`}
-                  />
-                  {activeSearchField === 'start' && (
-                    <button onClick={getCurrentLocation} className="absolute left-2 top-2 p-1 text-blue-600 font-medium text-xs flex items-center gap-1">
-                      <FaLocationArrow /> موقعي
-                    </button>
-                  )}
-                </div>
-
-                {/* TO INPUT */}
-                <input
-                  value={activeSearchField === 'end' ? searchQuery : (endPoint?.name || '')}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => { setActiveSearchField('end'); setSearchQuery(''); goToState('searching'); }}
-                  placeholder="إلى أين؟"
-                  autoFocus
-                  className={`w-full bg-gray-100 p-3 rounded-lg text-sm transition-all outline-none ${activeSearchField === 'end' ? 'ring-2 ring-yellow-400' : ''}`}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Results List */}
-          <div className="flex-1 overflow-y-auto p-4 bg-white">
-            {isSearching ? (
-              <div className="text-center py-8 text-gray-400">جاري البحث...</div>
-            ) : (
-              searchResults.map((item, idx) => (
-                <LocationItem
-                  key={idx}
-                  icon={<FaMapMarkerAlt />}
-                  title={item.display_name.split(',')[0]}
-                  subtitle={item.display_name}
-                  onClick={() => handleLocationSelect(item)}
-                />
-              ))
-            )}
-          </div>
-        </motion.div>
+          <FaArrowLeft className="text-gray-700" />
+        </button>
       )}
 
-      {/* 3️⃣ SERVICE SELECTION STATE */}
-      {/* 3️⃣ SERVICE SELECTION STATE */}
-      {viewState === 'selecting_service' && tripInfo && (
-        <motion.div
-          initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-          className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] flex flex-col"
-        >
-          <div className="p-4 border-b border-gray-100 relative">
-            <button
-              onClick={() => window.history.back()}
-              className="absolute right-4 top-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors z-10"
-              title="تعديل المسار"
-            >
-              <FaArrowRight className="text-gray-600" />
-            </button>
+      {/* 🖥️ UI LAYER (Foreground) */}
+      <AnimatePresence mode="wait">
 
-            <button
-              onClick={() => { setStartPoint(null); setEndPoint(null); goToState('idle'); }}
-              className="absolute left-4 top-4 p-2 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors z-10"
-              title="إلغاء الرحلة"
-            >
-              <FaTimes />
-            </button>
-
-            <DraggableBar />
-
-            {/* Trip Details (From -> To) */}
-            <div className="px-4 pb-2">
-              <div className="flex flex-col gap-2">
-                {/* From */}
-                <div className="flex items-start gap-2">
-                  <div className="mt-1 min-w-[16px] h-4 w-4 rounded-full border-[3px] border-green-500 bg-white" />
-                  <div className="flex-1">
-                    <div className="text-[10px] text-gray-400 font-bold">من</div>
-                    <div className="text-sm font-semibold text-gray-800 line-clamp-1">{startPoint?.name || "موقع البدء"}</div>
-                  </div>
-                </div>
-
-                {/* Dotted Line */}
-                <div className="mr-[7px] w-[2px] h-3 bg-gray-200" />
-
-                {/* To */}
-                <div className="flex items-start gap-2">
-                  <FaMapMarkerAlt className="mt-0.5 text-red-500 text-lg" />
-                  <div className="flex-1">
-                    <div className="text-[10px] text-gray-400 font-bold">إلى</div>
-                    <div className="text-sm font-semibold text-gray-800 line-clamp-1">{endPoint?.name || "الوجهة"}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-gray-100 mt-2">
-              <h2 className="text-center font-bold text-gray-800 text-sm">اختر نوع الخدمة</h2>
-              <div className="flex items-center justify-center gap-4 text-xs text-gray-400 mt-1">
-                <div className="flex items-center gap-1"><FaClock className="text-gray-300" /> {Math.ceil(tripInfo.adjustedDuration)} دقيقة</div>
-                <div className="flex items-center gap-1"><FaMapMarkerAlt className="text-gray-300" /> {tripInfo.distance.toFixed(1)} كم</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Services List Scrollable (Horizontal) */}
-          <div
-            className="mt-2 w-full overflow-x-auto py-2 px-4 [&::-webkit-scrollbar]:hidden"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        {/* 1️⃣ IDLE STATE: "Where to?" */}
+        {viewState === 'idle' && (
+          <motion.div
+            initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
+            className="absolute bottom-0 left-0 right-0 z-20 p-4"
           >
-            <div className="flex items-center gap-3 min-w-max h-40">
-              {childServices.map(service => (
-                <ServiceCard
-                  key={service.id}
-                  service={service}
-                  duration={tripInfo.adjustedDuration}
-                  price={calculatePrice(service)}
-                  isSelected={chosenService?.id === service.id}
-                  onSelect={setChosenService}
+            <div className="bg-white rounded-t-3xl shadow-xl w-full p-6 pb-12">
+              <DraggableBar />
+              <h2 className="text-2xl font-bold mb-4 text-gray-800">إلى أين تريد الذهاب؟</h2>
+
+              <div
+                onClick={() => { goToState('searching'); setActiveSearchField('end'); }}
+                className="bg-gray-100 p-4 rounded-xl flex items-center gap-3 cursor-pointer hover:bg-gray-200 transition-colors"
+              >
+                <FaSearch className="text-gray-800 text-lg" />
+                <span className="text-gray-500 font-medium text-lg">ابحث عن وجهة...</span>
+              </div>
+
+              {/* Saved Places Quick Access */}
+              <div className="mt-6">
+                <LocationItem
+                  icon={<FaLocationArrow />}
+                  title="منزلي"
+                  subtitle="تعيين موقع المنزل"
+                  onClick={() => { }}
                 />
-              ))}
+                <LocationItem
+                  icon={<FaHistory />}
+                  title="آخر رحلة"
+                  subtitle="دمشق, ساحة الأمويين"
+                  onClick={() => { }}
+                  isLast
+                />
+              </div>
             </div>
-          </div>
+          </motion.div>
+        )}
 
-          {/* Promotions & Payment area */}
-          <div className="p-4 bg-white border-t border-gray-100 pb-8 flex flex-col gap-3">
+        {/* 2️⃣ SEARCHING STATE: Expanded Input */}
+        {viewState === 'searching' && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 z-30 bg-white flex flex-col"
+          >
+            <div className="p-4 shadow-sm z-10 bg-white">
+              <div className="flex items-center gap-4 mb-4">
+                <button onClick={() => window.history.back()}><FaArrowLeft className="text-xl" /></button>
+                <h2 className="text-xl font-bold">تحديد المسار</h2>
+              </div>
 
-            {/* Promotions Section - Full Width */}
-            {userId && chosenService && startPoint && endPoint && (
-              <div className="flex flex-col w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <AvailablePromotions
-                  orderValue={parseInt(calculatePrice(chosenService))}
-                  userId={userId}
-                  serviceId={chosenService.id}
-                  startLat={startPoint.lat} startLng={startPoint.lon}
-                  endLat={endPoint.lat} endLng={endPoint.lon}
-                  onPromotionSelected={setAppliedPromotion}
-                />
-                <div className="mt-1">
-                  <PromotionCodeInput
-                    userId={userId}
-                    serviceId={chosenService.id}
-                    orderValue={parseInt(calculatePrice(chosenService))}
-                    startLat={startPoint.lat} startLng={startPoint.lon}
-                    endLat={endPoint.lat} endLng={endPoint.lon}
-                    onPromotionApplied={setAppliedPromotion}
+              <div className="flex gap-3">
+                {/* Timeline visual */}
+                <div className="flex flex-col items-center pt-2">
+                  <div className="w-3 h-3 bg-gray-300 rounded-full" />
+                  <div className="w-0.5 h-12 bg-gray-200" />
+                  <div className="w-3 h-3 bg-black rounded-sm" />
+                </div>
+
+                <div className="flex-1 flex flex-col gap-3">
+                  {/* FROM INPUT */}
+                  <div className="relative">
+                    <input
+                      value={activeSearchField === 'start' ? searchQuery : (startPoint?.name || '')}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => { setActiveSearchField('start'); setSearchQuery(''); goToState('searching'); }}
+                      placeholder="الموقع الحالي"
+                      className={`w-full bg-gray-100 p-3 rounded-lg text-sm transition-all outline-none ${activeSearchField === 'start' ? 'ring-2 ring-yellow-400' : ''}`}
+                    />
+                    {activeSearchField === 'start' && (
+                      <button onClick={getCurrentLocation} className="absolute left-2 top-2 p-1 text-blue-600 font-medium text-xs flex items-center gap-1">
+                        <FaLocationArrow /> موقعي
+                      </button>
+                    )}
+                  </div>
+
+                  {/* TO INPUT */}
+                  <input
+                    value={activeSearchField === 'end' ? searchQuery : (endPoint?.name || '')}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => { setActiveSearchField('end'); setSearchQuery(''); goToState('searching'); }}
+                    placeholder="إلى أين؟"
+                    autoFocus
+                    className={`w-full bg-gray-100 p-3 rounded-lg text-sm transition-all outline-none ${activeSearchField === 'end' ? 'ring-2 ring-yellow-400' : ''}`}
                   />
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Payment Method & Confirm Button */}
-            <div className="flex items-center gap-3 w-full">
-              <div className="flex-shrink-0 bg-gray-50 border border-gray-200 px-3 py-3 rounded-xl flex items-center gap-2 h-14 cursor-pointer hover:bg-gray-100 transition-colors">
-                <FaStar className="text-yellow-400 text-lg" />
-                <span className="font-bold text-sm text-gray-700">كاش</span>
-              </div>
+            {/* Results List */}
+            <div className="flex-1 overflow-y-auto p-4 bg-white">
+              {isSearching ? (
+                <div className="text-center py-8 text-gray-400">جاري البحث...</div>
+              ) : (
+                searchResults.map((item, idx) => (
+                  <LocationItem
+                    key={idx}
+                    icon={<FaMapMarkerAlt />}
+                    title={item.display_name.split(',')[0]}
+                    subtitle={item.display_name}
+                    onClick={() => handleLocationSelect(item)}
+                  />
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* 3️⃣ SERVICE SELECTION STATE */}
+        {/* 3️⃣ SERVICE SELECTION STATE */}
+        {viewState === 'selecting_service' && tripInfo && (
+          <motion.div
+            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+            className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] flex flex-col"
+          >
+            <div className="p-4 border-b border-gray-100 relative">
+              <button
+                onClick={() => window.history.back()}
+                className="absolute right-4 top-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors z-10"
+                title="تعديل المسار"
+              >
+                <FaArrowRight className="text-gray-600" />
+              </button>
 
               <button
-                onClick={submitOrder}
-                disabled={!chosenService}
-                className="flex-1 bg-yellow-400 text-black h-14 rounded-xl font-bold text-lg hover:bg-yellow-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                onClick={() => { setStartPoint(null); setEndPoint(null); goToState('idle'); }}
+                className="absolute left-4 top-4 p-2 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors z-10"
+                title="إلغاء الرحلة"
               >
-                {chosenService ? (
-                  <>
-                    <span>تأكيد {chosenService.name1}</span>
-                    <span className="bg-white/20 px-2 py-0.5 rounded text-sm font-normal">{getFinalOrderPrice()} ل.س</span>
-                  </>
-                ) : 'اختر خدمة'}
+                <FaTimes />
+              </button>
+
+              <DraggableBar />
+
+              {/* Trip Details (From -> To) */}
+              <div className="px-4 pb-2">
+                <div className="flex flex-col gap-2">
+                  {/* From */}
+                  <div className="flex items-start gap-2">
+                    <div className="mt-1 min-w-[16px] h-4 w-4 rounded-full border-[3px] border-green-500 bg-white" />
+                    <div className="flex-1">
+                      <div className="text-[10px] text-gray-400 font-bold">من</div>
+                      <div className="text-sm font-semibold text-gray-800 line-clamp-1">{startPoint?.name || "موقع البدء"}</div>
+                    </div>
+                  </div>
+
+                  {/* Dotted Line */}
+                  <div className="mr-[7px] w-[2px] h-3 bg-gray-200" />
+
+                  {/* To */}
+                  <div className="flex items-start gap-2">
+                    <FaMapMarkerAlt className="mt-0.5 text-red-500 text-lg" />
+                    <div className="flex-1">
+                      <div className="text-[10px] text-gray-400 font-bold">إلى</div>
+                      <div className="text-sm font-semibold text-gray-800 line-clamp-1">{endPoint?.name || "الوجهة"}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-gray-100 mt-2">
+                <h2 className="text-center font-bold text-gray-800 text-sm">اختر نوع الخدمة</h2>
+                <div className="flex items-center justify-center gap-4 text-xs text-gray-400 mt-1">
+                  <div className="flex items-center gap-1"><FaClock className="text-gray-300" /> {Math.ceil(tripInfo.adjustedDuration)} دقيقة</div>
+                  <div className="flex items-center gap-1"><FaMapMarkerAlt className="text-gray-300" /> {tripInfo.distance.toFixed(1)} كم</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Services List Scrollable (Horizontal) */}
+            <div
+              className="mt-2 w-full overflow-x-auto py-2 px-4 [&::-webkit-scrollbar]:hidden"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              <div className="flex items-center gap-3 min-w-max h-40">
+                {childServices.map(service => (
+                  <ServiceCard
+                    key={service.id}
+                    service={service}
+                    duration={tripInfo.adjustedDuration}
+                    price={calculatePrice(service)}
+                    isSelected={chosenService?.id === service.id}
+                    onSelect={setChosenService}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Promotions & Payment area */}
+            <div className="p-4 bg-white border-t border-gray-100 pb-8 flex flex-col gap-3">
+
+              {/* Promotions Section - Full Width */}
+              {userId && chosenService && startPoint && endPoint && (
+                <div className="flex flex-col w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <AvailablePromotions
+                    orderValue={parseInt(calculatePrice(chosenService))}
+                    userId={userId}
+                    serviceId={chosenService.id}
+                    startLat={startPoint.lat} startLng={startPoint.lon}
+                    endLat={endPoint.lat} endLng={endPoint.lon}
+                    onPromotionSelected={setAppliedPromotion}
+                  />
+                  <div className="mt-1">
+                    <PromotionCodeInput
+                      userId={userId}
+                      serviceId={chosenService.id}
+                      orderValue={parseInt(calculatePrice(chosenService))}
+                      startLat={startPoint.lat} startLng={startPoint.lon}
+                      endLat={endPoint.lat} endLng={endPoint.lon}
+                      onPromotionApplied={setAppliedPromotion}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Method & Confirm Button */}
+              <div className="flex items-center gap-3 w-full">
+                <div className="flex-shrink-0 bg-gray-50 border border-gray-200 px-3 py-3 rounded-xl flex items-center gap-2 h-14 cursor-pointer hover:bg-gray-100 transition-colors">
+                  <FaStar className="text-yellow-400 text-lg" />
+                  <span className="font-bold text-sm text-gray-700">كاش</span>
+                </div>
+
+                <button
+                  onClick={submitOrder}
+                  disabled={!chosenService}
+                  className="flex-1 bg-yellow-400 text-black h-14 rounded-xl font-bold text-lg hover:bg-yellow-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                >
+                  {chosenService ? (
+                    <>
+                      <span>تأكيد {chosenService.name1}</span>
+                      <span className="bg-white/20 px-2 py-0.5 rounded text-sm font-normal">{getFinalOrderPrice()} ل.س</span>
+                    </>
+                  ) : 'اختر خدمة'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* 4️⃣ SEARCHING FOR CAPTAIN STATE */}
+        {viewState === 'searching_for_captain' && chosenService && (
+          <motion.div
+            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+            className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] p-6 pb-12"
+          >
+            <div className="text-center">
+              <div className="relative w-20 h-20 mx-auto mb-4">
+                {/* Ripple Animation */}
+                <div className="absolute inset-0 border-4 border-yellow-400 rounded-full animate-ping opacity-75"></div>
+                <div className="absolute inset-0 border-4 border-yellow-400 rounded-full animate-pulse"></div>
+                <Image
+                  src={chosenService.photo1 || "/car-placeholder.png"}
+                  alt="Searching"
+                  fill
+                  className="object-contain p-2 z-10 relative"
+                />
+              </div>
+
+              <h2 className="text-xl font-bold text-gray-800 mb-1">جاري البحث عن كباتن...</h2>
+              <p className="text-gray-500 text-sm mb-6">يرجى الانتظار، نقوم بإبلاغ الكباتن القريبين منك</p>
+
+              {/* Found Captains Counter */}
+              {captainsFoundCount > 0 && (
+                <div className="bg-green-50 text-green-700 px-4 py-2 rounded-full inline-block mb-4 text-sm font-bold animate-bounce">
+                  تم إشعار {captainsFoundCount} كابتن قريب 🚕
+                </div>
+              )}
+
+              {/* Cancel Button */}
+              <button
+                onClick={cancelOrder}
+                className="w-full bg-gray-100 text-gray-600 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+              >
+                إلغاء الطلب
               </button>
             </div>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        )}
 
-      {/* 4️⃣ SEARCHING FOR CAPTAIN STATE */}
-      {viewState === 'searching_for_captain' && chosenService && (
-        <motion.div
-          initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-          className="absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] p-6 pb-12"
-        >
-          <div className="text-center">
-            <div className="relative w-20 h-20 mx-auto mb-4">
-              {/* Ripple Animation */}
-              <div className="absolute inset-0 border-4 border-yellow-400 rounded-full animate-ping opacity-75"></div>
-              <div className="absolute inset-0 border-4 border-yellow-400 rounded-full animate-pulse"></div>
-              <Image
-                src={chosenService.photo1 || "/car-placeholder.png"}
-                alt="Searching"
-                fill
-                className="object-contain p-2 z-10 relative"
-              />
-            </div>
-
-            <h2 className="text-xl font-bold text-gray-800 mb-1">جاري البحث عن كباتن...</h2>
-            <p className="text-gray-500 text-sm mb-6">يرجى الانتظار، نقوم بإبلاغ الكباتن القريبين منك</p>
-
-            {/* Found Captains Counter */}
-            {captainsFoundCount > 0 && (
-              <div className="bg-green-50 text-green-700 px-4 py-2 rounded-full inline-block mb-4 text-sm font-bold animate-bounce">
-                تم إشعار {captainsFoundCount} كابتن قريب 🚕
-              </div>
-            )}
-
-            {/* Cancel Button */}
-            <button
-              onClick={cancelOrder}
-              className="w-full bg-gray-100 text-gray-600 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors"
-            >
-              إلغاء الطلب
-            </button>
-          </div>
-        </motion.div>
-      )}
-
-    </AnimatePresence>
-  </div>
-);
+      </AnimatePresence>
+    </div>
+  );
 };
 
 export default MapOnlyPage;

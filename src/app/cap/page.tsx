@@ -506,10 +506,8 @@ export default function CaptainApp() {
 
     return () => {
       supabase.removeChannel(matchingChannel);
-      return () => {
-        supabase.removeChannel(matchingChannel);
-      };
-    }, [active, currentLocation, captainId, zoneRadius]);
+    };
+  }, [active, currentLocation, captainId, zoneRadius]);
 
   // 🔄 Polling Listener (Fallback for Weak Connection)
   useEffect(() => {
