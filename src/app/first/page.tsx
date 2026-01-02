@@ -191,7 +191,9 @@ export default function HomePage() {
               };
 
               activeTripStorage.saveTrip(activeTripData);
+              setShowActiveTripView(true);
               console.log('🚗 Active trip created for customer');
+              console.log('✅ ActiveTripView should now be visible');
             }
           })
           .subscribe();
