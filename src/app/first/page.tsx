@@ -239,6 +239,11 @@ export default function HomePage() {
   // Subscribe to active_trips table changes for real-time updates
   useEffect(() => {
     const userId = parseInt(localStorage.getItem('userId') || '0');
+
+    console.log('🔍 DEBUG: Subscription useEffect running');
+    console.log('🔍 DEBUG: userId =', userId);
+    console.log('🔍 DEBUG: supabase =', typeof supabase);
+
     if (!userId) {
       console.warn('⚠️ No userId, cannot subscribe');
       return;
@@ -248,7 +253,8 @@ export default function HomePage() {
 
     const channel = supabase.channel('active_trips')
       .on('broadcast', { event: 'trip_created' }, (payload: any) => {
-        console.log('📡 Received trip_created event:', payload);
+        console.log('📡 ===== RECEIVED trip_created =====');
+        console.log('📡 Full payload:', JSON.stringify(payload, null, 2));
 
         if (payload.payload.customer_id === userId) {
           console.log('✅ Trip is for this customer, creating local trip');
@@ -302,15 +308,26 @@ export default function HomePage() {
         }
       })
       .on('broadcast', { event: 'status_changed' }, (payload: any) => {
-        console.log('📡 Received status_changed event:', payload);
+        console.log('📡 ===== RECEIVED status_changed =====');
+        console.log('📡 Full payload:', JSON.stringify(payload, null, 2));
+        console.log('📡 Event:', payload.event);
+        console.log('📡 Payload data:', payload.payload);
 
         const trip = activeTripStorage.getTrip();
+        console.log('🔍 Current trip:', trip);
+
         if (trip && trip.trip_id === payload.payload.trip_id) {
+          console.log('✅ Trip IDs match, updating...');
           activeTripStorage.updateTrip({
             ...trip,
             status: payload.payload.new_status
           });
           console.log('🔄 Trip status updated to:', payload.payload.new_status);
+        } else {
+          console.warn('⚠️ Trip ID mismatch or no trip:', {
+            currentTripId: trip?.trip_id,
+            payloadTripId: payload.payload.trip_id
+          });
         }
       })
       .on('broadcast', { event: 'location_update' }, (payload: any) => {
@@ -334,11 +351,18 @@ export default function HomePage() {
         }
       })
       .subscribe((status) => {
-        console.log('🔌 Channel subscription status:', status);
+        console.log('🔌 ===== SUBSCRIPTION STATUS =====');
+        console.log('🔌 Status:', status);
+        console.log('🔌 Timestamp:', new Date().toISOString());
+
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Subscribed to active_trips channel');
+          console.log('✅ ===== SUCCESSFULLY SUBSCRIBED TO active_trips =====');
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Channel subscription error');
+          console.error('❌ ===== CHANNEL SUBSCRIPTION ERROR =====');
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏱️ ===== CHANNEL SUBSCRIPTION TIMED OUT =====');
+        } else {
+          console.log('📊 Other status:', status);
         }
       });
 
