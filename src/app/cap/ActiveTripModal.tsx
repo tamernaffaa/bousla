@@ -122,19 +122,26 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
 
             if (success) {
                 toast.success(`تم تحديث الحالة إلى: ${STATUS_LABELS[newStatus]}`);
-                setTripData(activeTripStorage.getTrip());
+                const updatedTrip = activeTripStorage.getTrip();
+                setTripData(updatedTrip);
 
-                // Broadcast status change
-                await supabase.channel('active_trips').send({
-                    type: 'broadcast',
-                    event: 'status_update',
-                    payload: {
-                        trip_id: tripData.trip_id,
-                        order_id: tripData.order_id,
-                        status: newStatus,
-                        timestamp: new Date().toISOString()
-                    }
-                });
+                // Broadcast status change to active_trips channel
+                try {
+                    await supabase.channel('active_trips').send({
+                        type: 'broadcast',
+                        event: 'status_changed',
+                        payload: {
+                            trip_id: tripData.trip_id,
+                            order_id: tripData.order_id,
+                            old_status: tripData.status,
+                            new_status: newStatus,
+                            timestamp: new Date().toISOString()
+                        }
+                    });
+                    console.log('📡 Broadcasted status_changed event');
+                } catch (broadcastError) {
+                    console.warn('Failed to broadcast status change:', broadcastError);
+                }
 
                 // If completed, close modal
                 if (newStatus === 'completed') {

@@ -223,6 +223,7 @@ class ActiveTripStorage {
         if (!trip) return false;
 
         const now = new Date().toISOString();
+        const oldStatus = trip.status;
         const updates: Partial<ActiveTripData> = { status: newStatus };
 
         // Set appropriate timestamp
@@ -238,13 +239,28 @@ class ActiveTripStorage {
                 break;
         }
 
+        // Always update locally first (offline-first approach)
         this.updateTrip(updates);
 
-        // Try immediate sync for status changes
+        // Try to sync in background, but don't block on it
         if (navigator.onLine) {
-            return await this.syncTrip(trip.trip_id);
+            this.syncTrip(trip.trip_id).catch(err => {
+                console.warn('Background sync failed, will retry later:', err);
+                // Add to pending updates for later sync
+                this.addPendingUpdate({
+                    type: 'status_change',
+                    data: { status: newStatus, timestamp: now }
+                });
+            });
+        } else {
+            // Offline: add to pending updates
+            this.addPendingUpdate({
+                type: 'status_change',
+                data: { status: newStatus, timestamp: now }
+            });
         }
 
+        // Always return true since local update succeeded
         return true;
     }
 
