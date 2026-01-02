@@ -236,17 +236,102 @@ export default function HomePage() {
     }
   }, []);
 
-  // Update showActiveTripView when active trip is created
+  // Subscribe to active_trips channel for real-time updates
   useEffect(() => {
-    const checkTrip = () => {
-      const trip = activeTripStorage.getTrip();
-      setShowActiveTripView(!!trip && trip.status !== 'completed' && trip.status !== 'cancelled');
-    };
+    const userId = parseInt(localStorage.getItem('userId') || '0');
+    if (!userId) return;
 
-    // Check every 2 seconds
-    const interval = setInterval(checkTrip, 2000);
-    return () => clearInterval(interval);
+    console.log('🔌 Subscribing to active_trips channel for user:', userId);
+
+    const channel = supabase.channel('active_trips')
+      .on('broadcast', { event: 'trip_created' }, (payload: any) => {
+        console.log('📡 Received trip_created event:', payload);
+
+        if (payload.payload.customer_id === userId) {
+          console.log('✅ Trip is for this customer, creating local trip');
+
+          // إنشاء رحلة نشطة للزبون
+          const tripData = {
+            trip_id: payload.payload.trip_id,
+            order_id: payload.payload.order_id,
+            captain_id: payload.payload.captain_id,
+            customer_id: payload.payload.customer_id,
+            status: payload.payload.status,
+            accepted_at: payload.payload.timestamp,
+            on_way_distance_km: 0,
+            on_way_duration_min: 0,
+            on_way_billable_km: 0,
+            waiting_duration_min: 0,
+            waiting_billable_min: 0,
+            trip_distance_km: 0,
+            trip_duration_min: 0,
+            base_cost: payload.payload.base_cost,
+            km_price: payload.payload.km_price,
+            min_price: payload.payload.min_price,
+            on_way_cost: 0,
+            waiting_cost: 0,
+            trip_cost: 0,
+            total_cost: payload.payload.base_cost,
+            route_points: [],
+            captain_name: payload.payload.captain_name,
+            captain_phone: payload.payload.captain_phone,
+            captain_photo: payload.payload.captain_photo,
+            customer_name: '',
+            customer_phone: '',
+            last_synced: Date.now(),
+            pending_updates: [],
+            sync_status: 'synced' as const
+          };
+
+          activeTripStorage.saveTrip(tripData);
+          setShowActiveTripView(true);
+          console.log('🚗 Active trip created for customer');
+
+          // إزالة الطلب النشط
+          localStorage.removeItem('active_order');
+          setActiveOrder(null);
+        }
+      })
+      .on('broadcast', { event: 'status_changed' }, (payload: any) => {
+        console.log('📡 Received status_changed event:', payload);
+
+        const trip = activeTripStorage.getTrip();
+        if (trip && trip.trip_id === payload.payload.trip_id) {
+          activeTripStorage.updateTrip({
+            ...trip,
+            status: payload.payload.new_status
+          });
+          console.log('🔄 Trip status updated to:', payload.payload.new_status);
+        }
+      })
+      .on('broadcast', { event: 'location_update' }, (payload: any) => {
+        // تحديث الموقع على الخريطة (سيتم تنفيذه لاحقاً)
+        console.log('📍 Location update:', payload);
+      })
+      .on('broadcast', { event: 'billing_update' }, (payload: any) => {
+        console.log('💰 Billing update:', payload);
+
+        const trip = activeTripStorage.getTrip();
+        if (trip && trip.trip_id === payload.payload.trip_id) {
+          activeTripStorage.updateTrip({
+            ...trip,
+            on_way_distance_km: payload.payload.on_way_distance_km,
+            on_way_duration_min: payload.payload.on_way_duration_min,
+            waiting_duration_min: payload.payload.waiting_duration_min,
+            trip_distance_km: payload.payload.trip_distance_km,
+            trip_duration_min: payload.payload.trip_duration_min,
+            total_cost: payload.payload.current_cost
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      console.log('🔌 Unsubscribing from active_trips channel');
+      supabase.removeChannel(channel);
+    };
   }, []);
+
 
   // Polling Fallback (Check status every 3 seconds for reliability)
   useEffect(() => {

@@ -1107,9 +1107,49 @@ export default function CaptainApp() {
         activeTripStorage.saveTrip(activeTripData);
         console.log('🚗 Active trip created and saved locally');
 
+        // Broadcast الرحلة الجديدة للجميع (الزبون + لوحة الإدارة)
+        try {
+          await supabase.channel('active_trips').send({
+            type: 'broadcast',
+            event: 'trip_created',
+            payload: {
+              trip_id: activeTripData.trip_id,
+              order_id: selectedOrder.id,
+              captain_id: captainId,
+              customer_id: selectedOrder.user_id!,
+              status: 'on_way',
+              captain_name: profile.name,
+              captain_phone: profile.phone,
+              captain_photo: profile.photo,
+              base_cost: parseFloat(selectedOrder.f_km || '0'),
+              km_price: parseFloat(selectedOrder.km_price || '0'),
+              min_price: parseFloat(selectedOrder.min_price || '0'),
+              start_point: selectedOrder.start_point,
+              end_point: selectedOrder.end_point,
+              start_text: selectedOrder.start_text,
+              end_text: selectedOrder.end_text,
+              timestamp: new Date().toISOString()
+            }
+          });
+          console.log('📡 Broadcasted trip_created to active_trips channel');
+        } catch (error) {
+          console.error('❌ Error broadcasting trip_created:', error);
+        }
+
         // بدء تتبع الموقع للرحلة النشطة
         sendToKotlin("start_trip_tracking", JSON.stringify({ trip_id: activeTripData.trip_id }));
         console.log('📍 Started trip location tracking');
+
+        // بدء خدمة الخلفية
+        sendToKotlin("start_background_service", JSON.stringify({
+          trip_id: activeTripData.trip_id,
+          order_id: selectedOrder.id,
+          captain_id: captainId,
+          base_price: parseFloat(selectedOrder.f_km || '0'),
+          km_price: parseFloat(selectedOrder.km_price || '0'),
+          min_price: parseFloat(selectedOrder.min_price || '0')
+        }));
+        console.log('🔧 Started background service');
 
         // إيقاف زر استقبال الطلبات
         setActive(false);
