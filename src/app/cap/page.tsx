@@ -1158,6 +1158,33 @@ export default function CaptainApp() {
           console.error('❌ Error broadcasting trip_created:', error);
         }
 
+        // حفظ الرحلة في قاعدة البيانات للتحديثات الفورية
+        try {
+          await supabase.from('active_trips').insert({
+            trip_id: activeTripData.trip_id,
+            order_id: selectedOrder.id,
+            captain_id: captainId,
+            customer_id: selectedOrder.user_id!,
+            status: 'on_way',
+            accepted_at: new Date().toISOString(),
+            base_cost: parseFloat(selectedOrder.f_km || '0'),
+            km_price: parseFloat(selectedOrder.km_price || '0'),
+            min_price: parseFloat(selectedOrder.min_price || '0'),
+            total_cost: parseFloat(selectedOrder.f_km || '0'),
+            captain_name: profile.name,
+            captain_phone: profile.phone,
+            captain_photo: profile.photo,
+            on_way_distance_km: 0,
+            on_way_duration_min: 0,
+            waiting_duration_min: 0,
+            trip_distance_km: 0,
+            trip_duration_min: 0
+          });
+          console.log('✅ Trip saved to database');
+        } catch (dbError) {
+          console.error('❌ Error saving trip to database:', dbError);
+        }
+
         // بدء تتبع الموقع للرحلة النشطة
         sendToKotlin("start_trip_tracking", JSON.stringify({ trip_id: activeTripData.trip_id }));
         console.log('📍 Started trip location tracking');

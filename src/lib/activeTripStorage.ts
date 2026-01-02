@@ -300,7 +300,7 @@ class ActiveTripStorage {
     }
 
     /**
-     * Sync trip to Supabase
+     * Sync trip to Supabase active_trips table
      */
     async syncTrip(tripId: number): Promise<boolean> {
         const trip = this.getTrip();
@@ -309,43 +309,51 @@ class ActiveTripStorage {
             return false;
         }
 
-        if (trip.pending_updates.length === 0) {
-            console.log('✅ No pending updates to sync');
-            return true;
-        }
-
         try {
-            console.log(`🔄 Syncing trip ${tripId}...`);
+            console.log(`🔄 Syncing trip ${tripId} to database...`);
 
-            // Prepare update data (exclude sync metadata)
-            const { pending_updates, last_synced, sync_status, ...updateData } = trip;
-
-            // Update in Supabase
+            // Upsert to active_trips table
             const { error } = await supabase
                 .from('active_trips')
-                .update(updateData)
-                .eq('id', tripId);
+                .upsert({
+                    trip_id: trip.trip_id,
+                    order_id: trip.order_id,
+                    captain_id: trip.captain_id,
+                    customer_id: trip.customer_id,
+                    status: trip.status,
+                    accepted_at: trip.accepted_at,
+                    arrived_at: trip.arrived_at,
+                    started_at: trip.started_at,
+                    completed_at: trip.completed_at,
+                    on_way_distance_km: trip.on_way_distance_km,
+                    on_way_duration_min: trip.on_way_duration_min,
+                    waiting_duration_min: trip.waiting_duration_min,
+                    trip_distance_km: trip.trip_distance_km,
+                    trip_duration_min: trip.trip_duration_min,
+                    base_cost: trip.base_cost,
+                    km_price: trip.km_price,
+                    min_price: trip.min_price,
+                    total_cost: trip.total_cost,
+                    captain_name: trip.captain_name,
+                    captain_phone: trip.captain_phone,
+                    captain_photo: trip.captain_photo,
+                    updated_at: new Date().toISOString()
+                });
 
             if (error) throw error;
 
             // Mark as synced
-            const syncedTrip: ActiveTripData = {
-                ...trip,
+            this.updateTrip({
                 pending_updates: [],
                 last_synced: Date.now(),
                 sync_status: 'synced'
-            };
+            });
 
-            this.saveTrip(syncedTrip);
-            this.removeFromSyncQueue(tripId);
-
-            console.log(`✅ Trip ${tripId} synced successfully`);
+            console.log(`✅ Trip ${tripId} synced to database successfully`);
             return true;
 
         } catch (error) {
             console.error(`❌ Sync failed for trip ${tripId}:`, error);
-
-            // Mark as failed
             this.updateTrip({ sync_status: 'failed' });
             return false;
         }

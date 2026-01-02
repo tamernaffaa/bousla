@@ -236,14 +236,17 @@ export default function HomePage() {
     }
   }, []);
 
-  // Subscribe to active_trips channel for real-time updates
+  // Subscribe to active_trips table changes for real-time updates
   useEffect(() => {
     const userId = parseInt(localStorage.getItem('userId') || '0');
-    if (!userId) return;
+    if (!userId) {
+      console.warn('⚠️ No userId, cannot subscribe');
+      return;
+    }
 
-    console.log('🔌 Subscribing to active_trips channel for user:', userId);
+    console.log('🔌 Subscribing to active_trips table for user:', userId);
 
-    const channel = supabase.channel('active_trips')
+    const channel = supabase.channel('trip_db_updates')
       .on('broadcast', { event: 'trip_created' }, (payload: any) => {
         console.log('📡 Received trip_created event:', payload);
 
@@ -331,18 +334,16 @@ export default function HomePage() {
         }
       })
       .subscribe((status) => {
-        console.log('🔌 Channel subscription status:', status);
+        console.log('🔌 Database subscription status:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Successfully subscribed to active_trips channel');
+          console.log('✅ Subscribed to active_trips table');
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Channel subscription error');
-        } else if (status === 'TIMED_OUT') {
-          console.error('⏱️ Channel subscription timed out');
+          console.error('❌ Database subscription error');
         }
       });
 
     return () => {
-      console.log('🔌 Unsubscribing from active_trips channel');
+      console.log('🔌 Unsubscribing from active_trips table');
       supabase.removeChannel(channel);
     };
   }, []);
