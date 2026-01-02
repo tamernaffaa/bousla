@@ -21,6 +21,7 @@ import OrderTrackingModal from './OrderTrackingModal';
 import { RejectedOrdersModal } from './RejectedOrdersModal';
 import { checkAndApplyRewards } from './lib/rewardHandler';
 import { localOrderStorage } from '../../lib/localOrderStorage';
+import { activeTripStorage } from '../../lib/activeTripStorage';
 
 // تحميل مكونات الخريطة بعد ذلك
 const MapContainer = dynamic(
@@ -1008,7 +1009,8 @@ export default function CaptainApp() {
       waiting_min: order.waiting_min,
       end_time: order.end_time,
       start_point: order.start_point,
-      end_point: order.end_point
+      end_point: order.end_point,
+      user_id: order.user_id
     });
 
     setAcceptOrderStatus('idle');
@@ -1070,6 +1072,44 @@ export default function CaptainApp() {
         };
 
         sendToKotlin("order_accepted", JSON.stringify(orderData));
+
+        // إنشاء الرحلة النشطة
+        const activeTripData = {
+          trip_id: (result as any).trip_id || selectedOrder.id, // استخدام trip_id من الـ response أو order_id
+          order_id: selectedOrder.id,
+          captain_id: captainId,
+          customer_id: selectedOrder.user_id!,
+          status: 'on_way' as const,
+          accepted_at: new Date().toISOString(),
+          on_way_distance_km: 0,
+          on_way_duration_min: 0,
+          on_way_billable_km: 0,
+          waiting_duration_min: 0,
+          waiting_billable_min: 0,
+          trip_distance_km: 0,
+          trip_duration_min: 0,
+          base_cost: parseFloat(selectedOrder.f_km || '0'),
+          km_price: parseFloat(selectedOrder.km_price || '0'),
+          min_price: parseFloat(selectedOrder.min_price || '0'),
+          on_way_cost: 0,
+          waiting_cost: 0,
+          trip_cost: 0,
+          total_cost: parseFloat(selectedOrder.f_km || '0'),
+          route_points: [],
+          customer_name: '', // Will be fetched from users table if needed
+          customer_phone: '', // Will be fetched from users table if needed
+          last_synced: Date.now(),
+          pending_updates: [],
+          sync_status: 'synced' as const
+        };
+
+        // حفظ الرحلة النشطة محلياً
+        activeTripStorage.saveTrip(activeTripData);
+        console.log('🚗 Active trip created and saved locally');
+
+        // بدء تتبع الموقع للرحلة النشطة
+        sendToKotlin("start_trip_tracking", JSON.stringify({ trip_id: activeTripData.trip_id }));
+        console.log('📍 Started trip location tracking');
 
         // إيقاف زر استقبال الطلبات
         setActive(false);

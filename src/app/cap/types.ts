@@ -38,6 +38,8 @@ export interface Order {
   end_time: string;
   accept_time?: string;
   start_time?: string;
+  user_name?: string;
+  user_phone?: string;
 }
 
 export type OrderDetails = Pick<Order,
@@ -46,7 +48,11 @@ export type OrderDetails = Pick<Order,
   'notes' | 'discount' | 'km_price' | 'min_price' | 'add1' | 'f_km' |
   'start_time' | 'status' | 'real_km' | 'real_min' | 'real_price' |
   'real_street' | 'waiting_min' | 'end_time' | 'start_point' | 'end_point'
->;
+> & {
+  user_id?: number;
+  user_name?: string;
+  user_phone?: string;
+};
 
 export interface Service {
   id: number;

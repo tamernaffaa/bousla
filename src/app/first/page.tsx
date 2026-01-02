@@ -10,6 +10,8 @@ import "../cap/native-styles.css";
 import Image from 'next/image';
 import { supabase } from '../../lib/supabaseClient';
 import { toast } from 'react-toastify';
+import { activeTripStorage } from '../../lib/activeTripStorage';
+import ActiveTripView from './ActiveTripView';
 
 interface Trip {
   id: number;
@@ -72,6 +74,7 @@ export default function HomePage() {
     timestamp: number;
   } | null>(null);
   const [captainsNotified, setCaptainsNotified] = useState(0);
+  const [showActiveTripView, setShowActiveTripView] = useState(false);
 
   // Ads Data
   const ads = [
@@ -154,6 +157,41 @@ export default function HomePage() {
               const updatedOrder = { ...order, status: 'accepted', captain_id: payload.payload.captain_id };
               setActiveOrder(updatedOrder);
               localStorage.setItem('active_order', JSON.stringify(updatedOrder));
+
+              // Create active trip for customer
+              const activeTripData = {
+                trip_id: payload.payload.trip_id || order.order_id,
+                order_id: order.order_id,
+                captain_id: payload.payload.captain_id,
+                customer_id: order.user_id,
+                status: 'on_way' as const,
+                accepted_at: new Date().toISOString(),
+                on_way_distance_km: 0,
+                on_way_duration_min: 0,
+                on_way_billable_km: 0,
+                waiting_duration_min: 0,
+                waiting_billable_min: 0,
+                trip_distance_km: 0,
+                trip_duration_min: 0,
+                base_cost: parseFloat(order.cost) || 0,
+                km_price: parseFloat(order.km_price) || 0,
+                min_price: parseFloat(order.min_price) || 0,
+                on_way_cost: 0,
+                waiting_cost: 0,
+                trip_cost: 0,
+                total_cost: parseFloat(order.cost) || 0,
+                route_points: [],
+                captain_name: payload.payload.captain_name,
+                captain_phone: payload.payload.captain_phone,
+                captain_photo: payload.payload.captain_photo,
+                captain_rating: payload.payload.captain_rating,
+                last_synced: Date.now(),
+                pending_updates: [],
+                sync_status: 'synced' as const
+              };
+
+              activeTripStorage.saveTrip(activeTripData);
+              console.log('🚗 Active trip created for customer');
             }
           })
           .subscribe();
@@ -187,6 +225,27 @@ export default function HomePage() {
         localStorage.removeItem('active_order');
       }
     }
+  }, []);
+
+  // Check for active trip on mount
+  useEffect(() => {
+    const trip = activeTripStorage.getTrip();
+    if (trip && trip.status !== 'completed' && trip.status !== 'cancelled') {
+      setShowActiveTripView(true);
+      console.log('📱 Active trip found, showing trip view');
+    }
+  }, []);
+
+  // Update showActiveTripView when active trip is created
+  useEffect(() => {
+    const checkTrip = () => {
+      const trip = activeTripStorage.getTrip();
+      setShowActiveTripView(!!trip && trip.status !== 'completed' && trip.status !== 'cancelled');
+    };
+
+    // Check every 2 seconds
+    const interval = setInterval(checkTrip, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   // Polling Fallback (Check status every 3 seconds for reliability)
