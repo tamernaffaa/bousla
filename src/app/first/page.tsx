@@ -330,7 +330,16 @@ export default function HomePage() {
           });
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('🔌 Channel subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to active_trips channel');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Channel subscription error');
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏱️ Channel subscription timed out');
+        }
+      });
 
     return () => {
       console.log('🔌 Unsubscribing from active_trips channel');
