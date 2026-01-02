@@ -194,6 +194,32 @@ export default function HomePage() {
               setShowActiveTripView(true);
               console.log('🚗 Active trip created for customer');
               console.log('✅ ActiveTripView should now be visible');
+
+              // Subscribe to active_trips channel for this specific trip
+              console.log('🔌 Subscribing to active_trips for trip:', activeTripData.trip_id);
+              const tripChannel = supabase.channel('active_trips')
+                .on('broadcast', { event: 'status_changed' }, (statusPayload: any) => {
+                  console.log('📡 ===== RECEIVED status_changed =====');
+                  console.log('📡 Payload:', statusPayload);
+
+                  if (statusPayload.payload.trip_id === activeTripData.trip_id) {
+                    console.log('✅ Status update for our trip!');
+                    const currentTrip = activeTripStorage.getTrip();
+                    if (currentTrip) {
+                      activeTripStorage.updateTrip({
+                        ...currentTrip,
+                        status: statusPayload.payload.new_status
+                      });
+                      console.log('🔄 Trip status updated to:', statusPayload.payload.new_status);
+                    }
+                  }
+                })
+                .subscribe((status) => {
+                  console.log('🔌 Trip channel status:', status);
+                  if (status === 'SUBSCRIBED') {
+                    console.log('✅ Subscribed to trip updates');
+                  }
+                });
             }
           })
           .subscribe();
