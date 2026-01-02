@@ -287,6 +287,12 @@ export default function HomePage() {
           setShowActiveTripView(true);
           console.log('🚗 Active trip created for customer');
 
+          // إيقاف خدمة البحث عن كابتن
+          if (window.Android?.receiveMessage) {
+            window.Android.receiveMessage('stop_location_tracking', '');
+            console.log('🛑 Stopped customer location tracking service');
+          }
+
           // إزالة الطلب النشط
           localStorage.removeItem('active_order');
           setActiveOrder(null);
@@ -501,9 +507,9 @@ export default function HomePage() {
           {ads.map((ad, index) => (
             <div
               key={ad.id}
-              className={`absolute inset-0 ${ad.bg} flex flex-col items-center justify-center text-white p-6 transition-opacity duration-700
+              className={`absolute inset-0 ${ad.bg} flex flex - col items - center justify - center text - white p - 6 transition - opacity duration - 700
                   ${index === currentAdIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}
-                `}
+          `}
             >
               <h2 className="text-2xl font-black mb-1 text-center drop-shadow-md">{ad.text}</h2>
               <p className="opacity-90 font-medium bg-black/10 px-3 py-1 rounded-full">{ad.subtext}</p>
@@ -512,7 +518,7 @@ export default function HomePage() {
           {/* Dots */}
           <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-20">
             {ads.map((_, idx) => (
-              <div key={idx} className={`w-2 h-2 rounded-full transition-all ${idx === currentAdIndex ? 'bg-white w-4' : 'bg-white/50'}`} />
+              <div key={idx} className={`w - 2 h - 2 rounded - full transition - all ${idx === currentAdIndex ? 'bg-white w-4' : 'bg-white/50'} `} />
             ))}
           </div>
         </section>
@@ -539,10 +545,10 @@ export default function HomePage() {
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleServiceClick(service.id)}
                     className={`
-                                min-w-[110px] h-32
-                                flex flex-col items-center justify-center p-3 rounded-2xl cursor-pointer transition-all
-                                ${visual.bg} hover:shadow-md border border-transparent hover:border-yellow-400
-                            `}
+          min - w - [110px] h - 32
+                                flex flex - col items - center justify - center p - 3 rounded - 2xl cursor - pointer transition - all
+                                ${visual.bg} hover: shadow - md border border - transparent hover: border - yellow - 400
+            `}
                   >
                     <span className="text-4xl mb-3 filter drop-shadow-sm">{visual.icon}</span>
                     <span className="text-xs font-bold text-center leading-tight text-gray-800">{service.ser_name}</span>

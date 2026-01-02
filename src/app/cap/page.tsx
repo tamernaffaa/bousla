@@ -17,6 +17,7 @@ import { captainApi, ordersApi, servicesApi, paymentsApi } from './api';
 import { ProfileMenu as DynamicProfileMenu } from './menu/ProfileMenu';
 import { BetterLuckMessage } from './BetterLuckMessage';
 import { OrderDetailsModal } from './OrderDetailsModal';
+import ActiveTripModal from './ActiveTripModal';
 import OrderTrackingModal from './OrderTrackingModal';
 import { RejectedOrdersModal } from './RejectedOrdersModal';
 import { checkAndApplyRewards } from './lib/rewardHandler';
@@ -109,6 +110,7 @@ export default function CaptainApp() {
   });
   const [captainId, setCaptainId] = useState<number>(0);
   const [menusLoaded, setMenusLoaded] = useState(false);
+  const [showActiveTripModal, setShowActiveTripModal] = useState(false);
 
   // Swipe Logic for Opening Menu (Swipe Left from Right Edge - Arabic Layout)
   const [pageTouchStart, setPageTouchStart] = useState<number | null>(null);
@@ -277,6 +279,26 @@ export default function CaptainApp() {
         }));
       }
     }
+  }, []);
+
+  // Check for active trip and show modal
+  useEffect(() => {
+    const checkActiveTrip = () => {
+      const trip = activeTripStorage.getTrip();
+      if (trip && trip.status !== 'completed' && trip.status !== 'cancelled') {
+        setShowActiveTripModal(true);
+        console.log('📱 Active trip found for captain, showing modal');
+      } else {
+        setShowActiveTripModal(false);
+      }
+    };
+
+    // Check on mount
+    checkActiveTrip();
+
+    // Check every 2 seconds
+    const interval = setInterval(checkActiveTrip, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   const sendToKotlin = (action: string, message: string) => {
@@ -1155,17 +1177,16 @@ export default function CaptainApp() {
         setActive(false);
         console.log('🛑 Stopped searching for new orders');
 
-        setTimeout(() => {
-          setShowOrderDetails(false);
-          setAcceptOrderStatus('idle');
+        // إيقاف خدمة البحث عن طلبات
+        sendToKotlin("stop_location_tracking", "");
+        console.log('🛑 Stopped location tracking service');
 
-          // إظهار واجهة متابعة الطلب
-          setTrackingOrder(selectedOrder);
-          setShowOrderTracking(true);
+        // إغلاق نافذة تفاصيل الطلب وعرض ActiveTripModal
+        setShowOrderDetails(false);
+        setAcceptOrderStatus('idle');
+        setSelectedOrder(null);
 
-          // بدء تتبع المسار
-          sendToKotlin("start_route_tracking", selectedOrder.id.toString());
-        }, 2000);
+        console.log('✅ Order accepted successfully, active trip created');
       } else {
         setAcceptOrderStatus('error');
       }
@@ -1888,6 +1909,17 @@ export default function CaptainApp() {
             onStopRouteTracking={stopRouteTracking}
           />
         </div>
+      )}
+
+      {/* Active Trip Modal */}
+      {showActiveTripModal && (
+        <ActiveTripModal
+          isOpen={true}
+          onClose={() => {
+            // لا نغلق المودال إلا عند إنهاء الرحلة
+            console.log('Active trip modal close requested');
+          }}
+        />
       )}
 
       {/* Pending Completion Modal */}
