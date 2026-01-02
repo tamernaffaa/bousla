@@ -244,9 +244,9 @@ export default function HomePage() {
       return;
     }
 
-    console.log('🔌 Subscribing to active_trips table for user:', userId);
+    console.log('🔌 Subscribing to active_trips channel for user:', userId);
 
-    const channel = supabase.channel('trip_db_updates')
+    const channel = supabase.channel('active_trips')
       .on('broadcast', { event: 'trip_created' }, (payload: any) => {
         console.log('📡 Received trip_created event:', payload);
 
@@ -334,16 +334,16 @@ export default function HomePage() {
         }
       })
       .subscribe((status) => {
-        console.log('🔌 Database subscription status:', status);
+        console.log('🔌 Channel subscription status:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Subscribed to active_trips table');
+          console.log('✅ Subscribed to active_trips channel');
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Database subscription error');
+          console.error('❌ Channel subscription error');
         }
       });
 
     return () => {
-      console.log('🔌 Unsubscribing from active_trips table');
+      console.log('🔌 Unsubscribing from active_trips channel');
       supabase.removeChannel(channel);
     };
   }, []);
