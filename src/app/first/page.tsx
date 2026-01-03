@@ -583,7 +583,7 @@ export default function HomePage() {
               {ads.map((ad, index) => (
                 <div
                   key={ad.id}
-                  className={`absolute inset-0 ${ad.bg} flex flex - col items - center justify - center text - white p - 6 transition - opacity duration - 700
+                  className={`absolute inset-0 ${ad.bg} flex flex-col items-center justify-center text-white p-6 transition-opacity duration-700
                   ${index === currentAdIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}
           `}
                 >
@@ -594,7 +594,7 @@ export default function HomePage() {
               {/* Dots */}
               <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-20">
                 {ads.map((_, idx) => (
-                  <div key={idx} className={`w - 2 h - 2 rounded - full transition - all ${idx === currentAdIndex ? 'bg-white w-4' : 'bg-white/50'} `} />
+                  <div key={idx} className={`w-2 h-2 rounded-full transition-all ${idx === currentAdIndex ? 'bg-white w-4' : 'bg-white/50'}`} />
                 ))}
               </div>
             </section>
@@ -613,24 +613,26 @@ export default function HomePage() {
                 <div className="text-red-500 text-center text-sm">{servicesError}</div>
               ) : (
                 <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide px-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                  {services.map(service => {
-                    const visual = getServiceVisuals(service.ser_name);
-                    return (
-                      <motion.div
-                        key={service.id}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleServiceClick(service.id)}
-                        className={`
-          min - w - [110px] h - 32
-                                flex flex - col items - center justify - center p - 3 rounded - 2xl cursor - pointer transition - all
-                                ${visual.bg} hover: shadow - md border border - transparent hover: border - yellow - 400
+                  {services
+                    .filter(service => service.activ === 1) // ✅ عرض الخدمات النشطة فقط
+                    .map(service => {
+                      const visual = getServiceVisuals(service.ser_name);
+                      return (
+                        <motion.div
+                          key={service.id}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleServiceClick(service.id)}
+                          className={`
+                                min-w-[110px] h-32
+                                flex flex-col items-center justify-center p-3 rounded-2xl cursor-pointer transition-all
+                                ${visual.bg} hover:shadow-md border border-transparent hover:border-yellow-400
             `}
-                      >
-                        <span className="text-4xl mb-3 filter drop-shadow-sm">{visual.icon}</span>
-                        <span className="text-xs font-bold text-center leading-tight text-gray-800">{service.ser_name}</span>
-                      </motion.div>
-                    )
-                  })}
+                        >
+                          <span className="text-4xl mb-3 filter drop-shadow-sm">{visual.icon}</span>
+                          <span className="text-xs font-bold text-center leading-tight text-gray-800">{service.ser_name}</span>
+                        </motion.div>
+                      )
+                    })}
                 </div>
               )}
             </section>
@@ -745,34 +747,36 @@ export default function HomePage() {
               {/* Previous Trips */}
               {loading ? (
                 <div className="p-8 text-center text-gray-400 text-sm">جاري التحميل...</div>
-              ) : trips.length > 0 ? (
+              ) : trips.filter(trip => trip.status !== 'completed' && trip.status !== 'cancelled').length > 0 ? (
                 <div className="space-y-4">
-                  {trips.map(trip => (
-                    <div key={trip.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3">
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-2">
-                          <div className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold">
-                            {trip.status === 'new_order' ? 'جديد' : trip.status === 'start' ? 'جارية' : trip.status}
+                  {trips
+                    .filter(trip => trip.status !== 'completed' && trip.status !== 'cancelled') // ✅ عرض الرحلات النشطة فقط
+                    .map(trip => (
+                      <div key={trip.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-2">
+                            <div className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold">
+                              {trip.status === 'new_order' ? 'جديد' : trip.status === 'start' ? 'جارية' : trip.status}
+                            </div>
+                            <span className="text-xs text-gray-400">#{trip.id}</span>
                           </div>
-                          <span className="text-xs text-gray-400">#{trip.id}</span>
+                          <span className="font-black text-gray-900">{trip.price}</span>
                         </div>
-                        <span className="font-black text-gray-900">{trip.price}</span>
-                      </div>
 
-                      <div className="relative border-r-2 border-gray-200 pr-4 py-1 space-y-4">
-                        <div className="relative">
-                          <div className="absolute -right-[23px] top-1 w-3 h-3 bg-black rounded-full ring-2 ring-white"></div>
-                          <h4 className="text-xs text-gray-400">من</h4>
-                          <p className="font-bold text-sm">{trip.from}</p>
-                        </div>
-                        <div className="relative">
-                          <div className="absolute -right-[23px] top-1 w-3 h-3 bg-yellow-400 rounded-full ring-2 ring-white"></div>
-                          <h4 className="text-xs text-gray-400">إلى</h4>
-                          <p className="font-bold text-sm">{trip.to}</p>
+                        <div className="relative border-r-2 border-gray-200 pr-4 py-1 space-y-4">
+                          <div className="relative">
+                            <div className="absolute -right-[23px] top-1 w-3 h-3 bg-black rounded-full ring-2 ring-white"></div>
+                            <h4 className="text-xs text-gray-400">من</h4>
+                            <p className="font-bold text-sm">{trip.from}</p>
+                          </div>
+                          <div className="relative">
+                            <div className="absolute -right-[23px] top-1 w-3 h-3 bg-yellow-400 rounded-full ring-2 ring-white"></div>
+                            <h4 className="text-xs text-gray-400">إلى</h4>
+                            <p className="font-bold text-sm">{trip.to}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               ) : !activeOrder && (
                 <div className="flex flex-col items-center justify-center py-8 opacity-50">

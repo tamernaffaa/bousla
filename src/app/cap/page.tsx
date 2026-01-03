@@ -331,6 +331,29 @@ export default function CaptainApp() {
     console.log(`Mock Kotlin response - Action: ${action}, Message: ${message}`);
   };
 
+  // دالة تحديث Zone
+  const updateZone = useCallback((newZone: number) => {
+    console.log(`🔄 Updating zone to ${newZone}km`);
+
+    // تحديث state
+    setZoneRadius(newZone);
+    setCircleRadius(newZone * 1000); // km to meters
+
+    // حفظ في localStorage
+    localStorage.setItem('captain_zone', newZone.toString());
+
+    // إخبار Flutter background service
+    sendToKotlin('update_zone', JSON.stringify({
+      zone: newZone,
+      captain_id: captainId
+    }));
+
+    toast.success(`تم تحديث نطاق البحث إلى ${newZone} كم`, {
+      position: "top-center",
+      autoClose: 2000
+    });
+  }, [captainId]);
+
   // Memoized values
   const filteredPayments = useMemo(() => {
     return filterMonth
@@ -1844,6 +1867,42 @@ export default function CaptainApp() {
               </button>
             )}
           </div>
+
+          {/* Zone Controls */}
+          {!isSheetMinimized && (
+            <div className="w-full mt-4 p-3 bg-gray-50 rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-gray-600">نطاق البحث</span>
+                <span className="text-sm font-black text-yellow-600">{zoneRadius} كم</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => zoneRadius > 1 && updateZone(zoneRadius - 0.5)}
+                  disabled={zoneRadius <= 1}
+                  className="w-10 h-10 bg-white rounded-lg shadow flex items-center justify-center text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
+                >
+                  <FaMinus />
+                </button>
+                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-yellow-400 to-yellow-600 transition-all duration-300"
+                    style={{ width: `${(zoneRadius / 10) * 100}%` }}
+                  />
+                </div>
+                <button
+                  onClick={() => zoneRadius < 10 && updateZone(zoneRadius + 0.5)}
+                  disabled={zoneRadius >= 10}
+                  className="w-10 h-10 bg-white rounded-lg shadow flex items-center justify-center text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
+                >
+                  <FaPlus />
+                </button>
+              </div>
+              <div className="flex justify-between text-[10px] text-gray-400 mt-1 px-1">
+                <span>1 كم</span>
+                <span>10 كم</span>
+              </div>
+            </div>
+          )}
 
           {/* 3. Stats Row (Condensed in Minimized) */}
           <div className={`transition-all duration-500 border-gray-100 ${isSheetMinimized ? 'border-none flex gap-4' : 'border-t mt-8 pt-6 w-full flex justify-between'}`}>
