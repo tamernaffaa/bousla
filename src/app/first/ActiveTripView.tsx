@@ -40,12 +40,22 @@ export default function ActiveTripView({ isOpen, onClose }: ActiveTripViewProps)
     const [tripData, setTripData] = useState<ActiveTripData | null>(null);
     const [estimatedArrival, setEstimatedArrival] = useState<number>(0);
 
-    // Load trip data
+    // Load trip data and poll for updates
     useEffect(() => {
-        if (isOpen) {
-            const trip = activeTripStorage.getTrip();
-            setTripData(trip);
-        }
+        if (!isOpen) return;
+
+        // Initial load
+        const trip = activeTripStorage.getTrip();
+        setTripData(trip);
+
+        // Poll for updates every second
+        const interval = setInterval(() => {
+            const updatedTrip = activeTripStorage.getTrip();
+            setTripData(updatedTrip);
+            console.log('🔄 Refreshed trip data:', updatedTrip?.status);
+        }, 1000);
+
+        return () => clearInterval(interval);
     }, [isOpen]);
 
     // Listen for updates from Realtime
