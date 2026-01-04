@@ -994,9 +994,12 @@ export default function CaptainApp() {
             real_price: order.real_price,
             real_street: order.real_street,
             waiting_min: order.waiting_min,
+
             end_time: order.end_time,
             start_point: order.start_point,
-            end_point: order.end_point
+            end_point: order.end_point,
+            free_on_way_km: order.free_on_way_km,
+            free_waiting_min: order.free_waiting_min
           });
 
           setShowOrderDetails(true);
@@ -1055,7 +1058,9 @@ export default function CaptainApp() {
       end_time: order.end_time,
       start_point: order.start_point,
       end_point: order.end_point,
-      user_id: order.user_id
+      user_id: order.user_id,
+      free_on_way_km: order.free_on_way_km,
+      free_waiting_min: order.free_waiting_min
     });
 
     setAcceptOrderStatus('idle');
@@ -1136,6 +1141,8 @@ export default function CaptainApp() {
           base_cost: parseFloat(selectedOrder.f_km || '0'),
           km_price: parseFloat(selectedOrder.km_price || '0'),
           min_price: parseFloat(selectedOrder.min_price || '0'),
+          free_on_way_km: parseFloat(selectedOrder.free_on_way_km || '0'),
+          free_waiting_min: parseFloat(selectedOrder.free_waiting_min || '0'),
           on_way_cost: 0,
           waiting_cost: 0,
           trip_cost: 0,

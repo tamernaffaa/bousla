@@ -46,6 +46,8 @@ export interface ActiveTripData {
     base_cost: number;
     km_price: number;
     min_price: number;
+    free_on_way_km: number;
+    free_waiting_min: number;
     on_way_cost: number;
     waiting_cost: number;
     trip_cost: number;
@@ -190,18 +192,21 @@ class ActiveTripStorage {
         const trip = this.getTrip();
         if (!trip) return;
 
-        // Calculate billable amounts
-        const on_way_billable_km = metrics.on_way_distance_km
-            ? Math.max(0, metrics.on_way_distance_km - 1.5)
-            : trip.on_way_billable_km;
+        // Calculate billable amounts (Dynamic calculation with free limits)
+        // 1. On Way (Pickup)
+        const free_on_way_km = trip.free_on_way_km || 0;
+        const current_on_way_km = metrics.on_way_distance_km !== undefined ? metrics.on_way_distance_km : trip.on_way_distance_km;
+        const on_way_billable_km = Math.max(0, current_on_way_km - free_on_way_km);
 
-        const waiting_billable_min = metrics.waiting_duration_min
-            ? Math.max(0, metrics.waiting_duration_min - 5)
-            : trip.waiting_billable_min;
+        // 2. Waiting
+        const free_waiting_min = trip.free_waiting_min || 0;
+        const current_waiting_min = metrics.waiting_duration_min !== undefined ? metrics.waiting_duration_min : trip.waiting_duration_min;
+        const waiting_billable_min = Math.max(0, current_waiting_min - free_waiting_min);
 
         // Calculate costs
         const on_way_cost = on_way_billable_km * trip.km_price;
         const waiting_cost = waiting_billable_min * trip.min_price;
+
         const trip_cost = (metrics.trip_distance_km || trip.trip_distance_km) * trip.km_price +
             (metrics.trip_duration_min || trip.trip_duration_min) * trip.min_price;
 

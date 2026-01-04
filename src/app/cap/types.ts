@@ -40,6 +40,8 @@ export interface Order {
   start_time?: string;
   user_name?: string;
   user_phone?: string;
+  free_on_way_km?: string;
+  free_waiting_min?: string;
 }
 
 export type OrderDetails = Pick<Order,
@@ -47,7 +49,8 @@ export type OrderDetails = Pick<Order,
   'duration_min' | 'cost' | 'user_rate' | 'start_detlis' | 'end_detlis' |
   'notes' | 'discount' | 'km_price' | 'min_price' | 'add1' | 'f_km' |
   'start_time' | 'status' | 'real_km' | 'real_min' | 'real_price' |
-  'real_street' | 'waiting_min' | 'end_time' | 'start_point' | 'end_point'
+  'real_street' | 'waiting_min' | 'end_time' | 'start_point' | 'end_point' |
+  'free_on_way_km' | 'free_waiting_min'
 > & {
   user_id?: number;
   user_name?: string;
