@@ -153,6 +153,7 @@ export default function HomePage() {
             if (payload.payload.order_id === order.order_id) {
               console.log('⚡ Order accepted via broadcast!', payload.payload);
               toast.success(`🎉 تم قبول طلبك بواسطة الكابتن!`);
+              playNotificationSound();
 
               const updatedOrder = { ...order, status: 'accepted', captain_id: payload.payload.captain_id };
               setActiveOrder(updatedOrder);
@@ -213,9 +214,14 @@ export default function HomePage() {
                         status: statusPayload.payload.new_status
                       });
                       console.log('🔄 Trip status updated to:', statusPayload.payload.new_status);
+
+                      if (statusPayload.payload.new_status === 'arrived') {
+                        toast.info('وصل الكابتن إلى موقعك! 🚕');
+                        playNotificationSound();
+                      }
+
                     }
-                  }
-                })
+                  })
                 .subscribe((status) => {
                   console.log('🔌 Trip channel status:', status);
                   if (status === 'SUBSCRIBED') {
@@ -235,6 +241,7 @@ export default function HomePage() {
               const newStatus = payload.new.status;
               if (newStatus === 'accepted' || newStatus === 'cap_accept') {
                 toast.success('تم قبول طلبك! الكابتن في الطريق 🚕');
+                playNotificationSound();
                 setActiveOrder(prev => prev ? { ...prev, status: 'accepted' } : null);
                 localStorage.setItem('active_order', JSON.stringify({ ...order, status: 'accepted' }));
               } else if (newStatus === 'cancelled') {
@@ -415,6 +422,7 @@ export default function HomePage() {
         // منع التحديث المتكرر إذا كانت الحالة محدثة بالفعل
         if (activeOrder.status !== 'accepted') {
           toast.success('تم قبول طلبك! الكابتن في الطريق 🚕');
+          playNotificationSound();
           const updatedOrder = { ...activeOrder, status: 'accepted', captain_id: data.cap_id };
           setActiveOrder(updatedOrder);
           localStorage.setItem('active_order', JSON.stringify(updatedOrder));
@@ -454,6 +462,16 @@ export default function HomePage() {
     if (menuOpen) {
       window.history.back();
       // setMenuOpen(false) will happen in popstate
+    }
+  };
+
+  // Helper to play notification sound
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio('/sounds/notifcation1.mp3');
+      audio.play().catch(e => console.error('Error playing sound:', e));
+    } catch (e) {
+      console.error('Audio setup error:', e);
     }
   };
 
