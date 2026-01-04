@@ -257,14 +257,7 @@ export default function HomePage() {
     }
   }, []);
 
-  // Check for active trip on mount
-  useEffect(() => {
-    const trip = activeTripStorage.getTrip();
-    if (trip && trip.status !== 'completed' && trip.status !== 'cancelled') {
-      setShowActiveTripView(true);
-      console.log('📱 Active trip found, showing trip view');
-    }
-  }, []);
+
 
   // Subscribe to active_trips table changes for real-time updates
   useEffect(() => {
