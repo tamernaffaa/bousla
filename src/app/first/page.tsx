@@ -221,7 +221,8 @@ export default function HomePage() {
                       }
 
                     }
-                  })
+                  }
+                })
                 .subscribe((status) => {
                   console.log('🔌 Trip channel status:', status);
                   if (status === 'SUBSCRIBED') {
