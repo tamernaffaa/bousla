@@ -18,6 +18,7 @@ import Image from 'next/image';
 interface ActiveTripViewProps {
     isOpen: boolean;
     onClose: () => void;
+    mode?: 'modal' | 'embedded';
 }
 
 const STATUS_LABELS = {
@@ -36,7 +37,7 @@ const STATUS_ICONS = {
     cancelled: '❌'
 };
 
-export default function ActiveTripView({ isOpen, onClose }: ActiveTripViewProps) {
+export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: ActiveTripViewProps) {
     const [tripData, setTripData] = useState<ActiveTripData | null>(null);
     const [estimatedArrival, setEstimatedArrival] = useState<number>(0);
 
@@ -52,7 +53,7 @@ export default function ActiveTripView({ isOpen, onClose }: ActiveTripViewProps)
         const interval = setInterval(() => {
             const updatedTrip = activeTripStorage.getTrip();
             setTripData(updatedTrip);
-            console.log('🔄 Refreshed trip data:', updatedTrip?.status);
+            // console.log('🔄 Refreshed trip data:', updatedTrip?.status);
         }, 1000);
 
         return () => clearInterval(interval);
@@ -138,6 +139,178 @@ export default function ActiveTripView({ isOpen, onClose }: ActiveTripViewProps)
 
     if (!tripData) return null;
 
+    const Content = (
+        <div className={`flex flex-col h-full bg-white ${mode === 'embedded' ? 'rounded-2xl shadow-lg border border-gray-100 overflow-hidden' : 'rounded-t-3xl shadow-2xl overflow-y-auto'}`}>
+            {/* Header */}
+            <div className={`sticky top-0 p-4 border-b z-10 ${mode === 'embedded' ? 'bg-white' : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200'}`}>
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <span className="text-3xl">{STATUS_ICONS[tripData.status]}</span>
+                        <h2 className="text-xl font-bold text-gray-800">{STATUS_LABELS[tripData.status]}</h2>
+                    </div>
+                    {mode === 'modal' && (
+                        <button onClick={onClose} className="p-2 hover:bg-white/50 rounded-full">
+                            <FaTimes className="text-gray-600" />
+                        </button>
+                    )}
+                </div>
+
+                {/* ETA for on_way status */}
+                {tripData.status === 'on_way' && estimatedArrival > 0 && (
+                    <div className={`${mode === 'embedded' ? 'bg-gray-50' : 'bg-white'} rounded-lg p-3 flex items-center justify-between`}>
+                        <span className="text-sm text-gray-600">الوصول المتوقع</span>
+                        <span className="text-lg font-bold text-green-600">{estimatedArrival} دقيقة</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Content Body */}
+            <div className="p-4 space-y-4 flex-1">
+                {/* Captain Info */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-start gap-4">
+                        {/* Captain Photo */}
+                        <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-200 shrink-0">
+                            {tripData.captain_photo ? (
+                                <Image
+                                    src={tripData.captain_photo}
+                                    alt={tripData.captain_name || 'Captain'}
+                                    fill
+                                    className="object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <FaUser className="text-gray-400 text-2xl" />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Captain Details */}
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-lg font-bold truncate">{tripData.captain_name || 'الكابتن'}</h3>
+                                {tripData.captain_rating && (
+                                    <div className="flex items-center gap-1 bg-yellow-100 px-2 py-0.5 rounded-full shrink-0">
+                                        <FaStar className="text-yellow-500 text-xs" />
+                                        <span className="text-sm font-semibold">{tripData.captain_rating.toFixed(1)}</span>
+                                    </div>
+                                )}
+                            </div>
+                            <a
+                                href={`tel:${tripData.captain_phone}`}
+                                className="flex items-center gap-2 text-blue-600 text-sm"
+                            >
+                                <FaPhone className="text-xs" />
+                                <span dir="ltr">{tripData.captain_phone}</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Trip Progress (for in_progress status) */}
+                {tripData.status === 'in_progress' && (
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-blue-50 rounded-xl p-4 text-center">
+                            <FaMapMarkerAlt className="text-blue-600 mx-auto mb-2" />
+                            <p className="text-2xl font-bold text-blue-600">{tripData.trip_distance_km.toFixed(1)}</p>
+                            <p className="text-sm text-gray-600">كيلومتر</p>
+                        </div>
+                        <div className="bg-yellow-50 rounded-xl p-4 text-center">
+                            <FaClock className="text-yellow-600 mx-auto mb-2" />
+                            <p className="text-2xl font-bold text-yellow-600">{tripData.trip_duration_min}</p>
+                            <p className="text-sm text-gray-600">دقيقة</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Current Cost */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border-2 border-green-200">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <FaDollarSign className="text-green-600" />
+                            <span className="text-gray-600">التكلفة الحالية</span>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-3xl font-bold text-green-600">{tripData.total_cost.toFixed(0)}</p>
+                            <p className="text-sm text-gray-500">ليرة سورية</p>
+                        </div>
+                    </div>
+
+                    {/* Cost Breakdown (collapsible) */}
+                    {(tripData.on_way_cost > 0 || tripData.waiting_cost > 0 || tripData.trip_cost > 0) && (
+                        <details className="mt-3 pt-3 border-t border-green-200">
+                            <summary className="text-sm text-gray-600 cursor-pointer">عرض التفاصيل</summary>
+                            <div className="mt-2 space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                    <span>التكلفة الأساسية</span>
+                                    <span>{tripData.base_cost.toFixed(0)} ل.س</span>
+                                </div>
+                                {tripData.on_way_cost > 0 && (
+                                    <div className="flex justify-between text-gray-600">
+                                        <span>تكلفة الطريق</span>
+                                        <span>{tripData.on_way_cost.toFixed(0)} ل.س</span>
+                                    </div>
+                                )}
+                                {tripData.waiting_cost > 0 && (
+                                    <div className="flex justify-between text-gray-600">
+                                        <span>تكلفة الانتظار</span>
+                                        <span>{tripData.waiting_cost.toFixed(0)} ل.س</span>
+                                    </div>
+                                )}
+                                {tripData.trip_cost > 0 && (
+                                    <div className="flex justify-between text-gray-600">
+                                        <span>تكلفة الرحلة</span>
+                                        <span>{tripData.trip_cost.toFixed(0)} ل.س</span>
+                                    </div>
+                                )}
+                            </div>
+                        </details>
+                    )}
+                </div>
+
+                {/* Cancel Button */}
+                {canCancel && mode === 'modal' && (
+                    <button
+                        onClick={handleCancel}
+                        className="w-full bg-red-50 text-red-600 py-3 rounded-xl font-bold hover:bg-red-100 transition-colors border-2 border-red-200"
+                    >
+                        إلغاء الرحلة
+                    </button>
+                )}
+
+                {/* Info Messages */}
+                {tripData.status === 'on_way' && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                        ℹ️ أول {tripData.free_on_way_km ?? 0} كم من طريق الكابتن إليك مجاني
+                    </div>
+                )}
+                {tripData.status === 'waiting' && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                        ⏰ أول {tripData.free_waiting_min ?? 0} دقائق انتظار مجانية
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    if (mode === 'embedded') {
+        return (
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="w-full mb-4"
+                    >
+                        {Content}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        );
+    }
+
+    // Modal Mode
     return (
         <AnimatePresence>
             {isOpen && (
@@ -157,157 +330,10 @@ export default function ActiveTripView({ isOpen, onClose }: ActiveTripViewProps)
                         animate={{ y: 0 }}
                         exit={{ y: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[90vh] overflow-y-auto"
+                        className="fixed bottom-0 left-0 right-0 z-50 max-h-[90vh]"
                         dir="rtl"
                     >
-                        {/* Header */}
-                        <div className="sticky top-0 bg-gradient-to-br from-green-50 to-emerald-50 border-b border-green-200 p-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-3xl">{STATUS_ICONS[tripData.status]}</span>
-                                    <h2 className="text-xl font-bold text-gray-800">{STATUS_LABELS[tripData.status]}</h2>
-                                </div>
-                                <button onClick={onClose} className="p-2 hover:bg-white/50 rounded-full">
-                                    <FaTimes className="text-gray-600" />
-                                </button>
-                            </div>
-
-                            {/* ETA for on_way status */}
-                            {tripData.status === 'on_way' && estimatedArrival > 0 && (
-                                <div className="bg-white rounded-lg p-3 flex items-center justify-between">
-                                    <span className="text-sm text-gray-600">الوصول المتوقع</span>
-                                    <span className="text-lg font-bold text-green-600">{estimatedArrival} دقيقة</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-4 space-y-4">
-
-                            {/* Captain Info */}
-                            <div className="bg-gray-50 rounded-xl p-4">
-                                <div className="flex items-start gap-4">
-                                    {/* Captain Photo */}
-                                    <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-200">
-                                        {tripData.captain_photo ? (
-                                            <Image
-                                                src={tripData.captain_photo}
-                                                alt={tripData.captain_name || 'Captain'}
-                                                fill
-                                                className="object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center">
-                                                <FaUser className="text-gray-400 text-2xl" />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Captain Details */}
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="text-lg font-bold">{tripData.captain_name || 'الكابتن'}</h3>
-                                            {tripData.captain_rating && (
-                                                <div className="flex items-center gap-1 bg-yellow-100 px-2 py-0.5 rounded-full">
-                                                    <FaStar className="text-yellow-500 text-xs" />
-                                                    <span className="text-sm font-semibold">{tripData.captain_rating.toFixed(1)}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <a
-                                            href={`tel:${tripData.captain_phone}`}
-                                            className="flex items-center gap-2 text-blue-600 text-sm"
-                                        >
-                                            <FaPhone className="text-xs" />
-                                            <span dir="ltr">{tripData.captain_phone}</span>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Trip Progress (for in_progress status) */}
-                            {tripData.status === 'in_progress' && (
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="bg-blue-50 rounded-xl p-4 text-center">
-                                        <FaMapMarkerAlt className="text-blue-600 mx-auto mb-2" />
-                                        <p className="text-2xl font-bold text-blue-600">{tripData.trip_distance_km.toFixed(1)}</p>
-                                        <p className="text-sm text-gray-600">كيلومتر</p>
-                                    </div>
-                                    <div className="bg-yellow-50 rounded-xl p-4 text-center">
-                                        <FaClock className="text-yellow-600 mx-auto mb-2" />
-                                        <p className="text-2xl font-bold text-yellow-600">{tripData.trip_duration_min}</p>
-                                        <p className="text-sm text-gray-600">دقيقة</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Current Cost */}
-                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border-2 border-green-200">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <FaDollarSign className="text-green-600" />
-                                        <span className="text-gray-600">التكلفة الحالية</span>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-3xl font-bold text-green-600">{tripData.total_cost.toFixed(0)}</p>
-                                        <p className="text-sm text-gray-500">ليرة سورية</p>
-                                    </div>
-                                </div>
-
-                                {/* Cost Breakdown (collapsible) */}
-                                {(tripData.on_way_cost > 0 || tripData.waiting_cost > 0 || tripData.trip_cost > 0) && (
-                                    <details className="mt-3 pt-3 border-t border-green-200">
-                                        <summary className="text-sm text-gray-600 cursor-pointer">عرض التفاصيل</summary>
-                                        <div className="mt-2 space-y-1 text-sm">
-                                            <div className="flex justify-between">
-                                                <span>التكلفة الأساسية</span>
-                                                <span>{tripData.base_cost.toFixed(0)} ل.س</span>
-                                            </div>
-                                            {tripData.on_way_cost > 0 && (
-                                                <div className="flex justify-between text-gray-600">
-                                                    <span>تكلفة الطريق</span>
-                                                    <span>{tripData.on_way_cost.toFixed(0)} ل.س</span>
-                                                </div>
-                                            )}
-                                            {tripData.waiting_cost > 0 && (
-                                                <div className="flex justify-between text-gray-600">
-                                                    <span>تكلفة الانتظار</span>
-                                                    <span>{tripData.waiting_cost.toFixed(0)} ل.س</span>
-                                                </div>
-                                            )}
-                                            {tripData.trip_cost > 0 && (
-                                                <div className="flex justify-between text-gray-600">
-                                                    <span>تكلفة الرحلة</span>
-                                                    <span>{tripData.trip_cost.toFixed(0)} ل.س</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </details>
-                                )}
-                            </div>
-
-                            {/* Cancel Button */}
-                            {canCancel && (
-                                <button
-                                    onClick={handleCancel}
-                                    className="w-full bg-red-50 text-red-600 py-3 rounded-xl font-bold hover:bg-red-100 transition-colors border-2 border-red-200"
-                                >
-                                    إلغاء الرحلة
-                                </button>
-                            )}
-
-                            {/* Info Messages */}
-                            {tripData.status === 'on_way' && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                                    ℹ️ أول 1.5 كم من طريق الكابتن إليك مجاني
-                                </div>
-                            )}
-                            {tripData.status === 'waiting' && (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                                    ⏰ أول 5 دقائق انتظار مجانية
-                                </div>
-                            )}
-                        </div>
+                        {Content}
                     </motion.div>
                 </>
             )}

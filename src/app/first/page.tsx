@@ -735,18 +735,14 @@ export default function HomePage() {
                 </motion.div>
               )}
 
-              {/* Accepted Order */}
-              {activeOrder && activeOrder.status === 'accepted' && (
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-2xl shadow-lg border-2 border-green-400 mb-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                      ✅ تم قبول الطلب
-                    </div>
-                    <span className="font-black text-gray-900">{activeOrder.cost} ل.س</span>
-                  </div>
-                  <p className="text-sm text-gray-600 text-center">الكابتن في الطريق إليك!</p>
-                </div>
-              )}
+              {/* Active Trip Card (Embedded) */}
+              <div className="mb-4">
+                <ActiveTripView
+                  isOpen={true}
+                  mode="embedded"
+                  onClose={() => setShowActiveTripView(false)}
+                />
+              </div>
 
               {/* Previous Trips */}
               {loading ? (
