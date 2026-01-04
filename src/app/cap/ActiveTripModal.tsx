@@ -179,6 +179,22 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
         }
     };
 
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+    // Monitor online status
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
     if (!tripData) return null;
 
     return (
@@ -208,6 +224,12 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
                             <div className="flex items-center gap-3">
                                 <div className={`w-3 h-3 rounded-full ${STATUS_COLORS[tripData.status]} animate-pulse`} />
                                 <h2 className="text-xl font-bold">{STATUS_LABELS[tripData.status]}</h2>
+
+                                {/* Connection Status Indicator */}
+                                <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${isOnline ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} />
+                                    <span>{isOnline ? 'متصل' : 'غير متصل'}</span>
+                                </div>
                             </div>
                             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
                                 <FaTimes className="text-gray-600" />

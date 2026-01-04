@@ -1634,16 +1634,10 @@ export default function CaptainApp() {
       } : null);
     };
 
-    // Keep old listener for backward compatibility if needed, 
-    // but redirect to logic above or ignore if we are sure
-    window.update_cost = (km, min, cost) => {
-      // Ignore legacy cost updates as we now calculate locally
-      console.log('Ignored legacy update_cost call');
-    };
+
 
     return () => {
       (window as any).updateTripMetrics = undefined;
-      window.update_cost = undefined;
     };
   }, [trackingOrder]);
 
