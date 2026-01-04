@@ -153,7 +153,8 @@ export default function HomePage() {
             if (payload.payload.order_id === order.order_id) {
               console.log('⚡ Order accepted via broadcast!', payload.payload);
               toast.success(`🎉 تم قبول طلبك بواسطة الكابتن!`);
-              playNotificationSound();
+              toast.success(`🎉 تم قبول طلبك بواسطة الكابتن!`);
+              playNotificationSound('تم قبول الطلب! 🎉', 'وافق الكابتن على طلبك وهو في الطريق إليك.');
 
               const updatedOrder = { ...order, status: 'accepted', captain_id: payload.payload.captain_id };
               setActiveOrder(updatedOrder);
@@ -217,7 +218,7 @@ export default function HomePage() {
 
                       if (statusPayload.payload.new_status === 'arrived') {
                         toast.info('وصل الكابتن إلى موقعك! 🚕');
-                        playNotificationSound();
+                        playNotificationSound('وصل الكابتن! 🚕', 'الكابتن بانتظارك في الموقع المحدد.');
                       }
 
                     }
@@ -242,7 +243,7 @@ export default function HomePage() {
               const newStatus = payload.new.status;
               if (newStatus === 'accepted' || newStatus === 'cap_accept') {
                 toast.success('تم قبول طلبك! الكابتن في الطريق 🚕');
-                playNotificationSound();
+                playNotificationSound('تم قبول الطلب! 🚕', 'الكابتن في الطريق إليك الآن.');
                 setActiveOrder(prev => prev ? { ...prev, status: 'accepted' } : null);
                 localStorage.setItem('active_order', JSON.stringify({ ...order, status: 'accepted' }));
               } else if (newStatus === 'cancelled') {
@@ -423,7 +424,7 @@ export default function HomePage() {
         // منع التحديث المتكرر إذا كانت الحالة محدثة بالفعل
         if (activeOrder.status !== 'accepted') {
           toast.success('تم قبول طلبك! الكابتن في الطريق 🚕');
-          playNotificationSound();
+          playNotificationSound('تم قبول الطلب! 🚕', 'الكابتن في الطريق إليك الآن.');
           const updatedOrder = { ...activeOrder, status: 'accepted', captain_id: data.cap_id };
           setActiveOrder(updatedOrder);
           localStorage.setItem('active_order', JSON.stringify(updatedOrder));
@@ -466,15 +467,32 @@ export default function HomePage() {
     }
   };
 
-  // Helper to play notification sound
-  const playNotificationSound = () => {
+  // Helper to play notification sound & show system notification
+  const playNotificationSound = (title: string = 'بوصلة', body: string = 'تنبيه جديد') => {
     try {
+      // 1. Play Sound
       const audio = new Audio('/sounds/notifcation1.mp3');
       audio.play().catch(e => console.error('Error playing sound:', e));
+
+      // 2. Show System Notification (if in background)
+      if (document.hidden && Notification.permission === 'granted') {
+        new Notification(title, {
+          body: body,
+          icon: '/icons/icon-192x192.png', // Assuming pwa icon exists
+          tag: 'bousla-notification'
+        });
+      }
     } catch (e) {
-      console.error('Audio setup error:', e);
+      console.error('Notification error:', e);
     }
   };
+
+  // Request Notification Permission on Mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   // Helper for Service Visuals
   const getServiceVisuals = (serviceName: string) => {
