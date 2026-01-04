@@ -93,13 +93,13 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
 
             if (tripData.status === 'on_way' && tripData.accepted_at) {
                 const duration = Math.floor((now - new Date(tripData.accepted_at).getTime()) / 60000);
-                activeTripStorage.updateMetrics({ on_way_duration_min: duration });
+                activeTripStorage.updateMetrics({ on_way_duration_min: duration }, true);
             } else if (tripData.status === 'waiting' && tripData.arrived_at) {
                 const duration = Math.floor((now - new Date(tripData.arrived_at).getTime()) / 60000);
-                activeTripStorage.updateMetrics({ waiting_duration_min: duration });
+                activeTripStorage.updateMetrics({ waiting_duration_min: duration }, true);
             } else if (tripData.status === 'in_progress' && tripData.started_at) {
                 const duration = Math.floor((now - new Date(tripData.started_at).getTime()) / 60000);
-                activeTripStorage.updateMetrics({ trip_duration_min: duration });
+                activeTripStorage.updateMetrics({ trip_duration_min: duration }, true);
             }
 
             setTripData(activeTripStorage.getTrip());
