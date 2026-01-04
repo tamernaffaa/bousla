@@ -1586,31 +1586,69 @@ export default function CaptainApp() {
     sendToKotlin("call_emergency", "");
   }, []);
 
-  ///استقبال بيانات متابعة الرحلة من كوتلن
+  /// استقبال بيانات متابعة الرحلة من كوتلن
   useEffect(() => {
-    window.update_cost = (km: string, min: string, cost: string) => {
-      console.log('Received cost data:', { km, min, cost });
+    // New Generic Metrics Update
+    (window as any).updateTripMetrics = (data: any) => {
+      console.log('Received metrics data:', data);
 
+      if (!trackingOrder) return;
+
+      const metrics = {
+        on_way_distance_km: parseFloat(data.on_way_distance_km || '0'),
+        on_way_duration_min: parseFloat(data.on_way_duration_min || '0'),
+        waiting_duration_min: parseFloat(data.waiting_duration_min || '0'),
+        trip_distance_km: parseFloat(data.trip_distance_km || '0'),
+        trip_duration_min: parseFloat(data.trip_duration_min || '0')
+      };
+
+      // 1. Calculate cost locally using our storage logic
+      // This updates the local storage trip state
+      activeTripStorage.updateMetrics(metrics, true);
+
+      // 2. Get the updated trip data with calculated costs
+      const updatedTrip = activeTripStorage.getTrip();
+      if (!updatedTrip) return;
+
+      // 3. Update UI State
       setTrackingData({
-        distance: km,
-        time: min,
-        price: cost
+        distance: data.status === 'on_way'
+          ? updatedTrip.on_way_distance_km.toFixed(2)
+          : updatedTrip.trip_distance_km.toFixed(2),
+        time: data.status === 'on_way'
+          ? updatedTrip.on_way_duration_min.toFixed(0)
+          : updatedTrip.trip_duration_min.toFixed(0),
+        price: updatedTrip.total_cost.toFixed(0)
       });
 
-      if (trackingOrder) {
-        setTrackingOrder(prev => prev ? {
-          ...prev,
-          distance_km: km,
-          duration_min: parseInt(min) || 0,
-          cost: cost
-        } : null);
-      }
+      // 4. Update Tracking Order State
+      setTrackingOrder(prev => prev ? {
+        ...prev,
+        distance_km: data.status === 'on_way'
+          ? payload_dist(updatedTrip.on_way_distance_km)
+          : payload_dist(updatedTrip.trip_distance_km),
+        duration_min: data.status === 'on_way'
+          ? Math.round(updatedTrip.on_way_duration_min)
+          : Math.round(updatedTrip.trip_duration_min),
+        cost: updatedTrip.total_cost.toString()
+      } : null);
+    };
+
+    // Keep old listener for backward compatibility if needed, 
+    // but redirect to logic above or ignore if we are sure
+    window.update_cost = (km, min, cost) => {
+      // Ignore legacy cost updates as we now calculate locally
+      console.log('Ignored legacy update_cost call');
     };
 
     return () => {
+      (window as any).updateTripMetrics = undefined;
       window.update_cost = undefined;
     };
   }, [trackingOrder]);
+
+  // Helper for simple display
+  const payload_dist = (d: number) => d.toFixed(2);
 
   //ايقاف زر نشط 
   // داخل useEffect الرئيسي لإعداد الاستماع للأحداث

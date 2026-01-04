@@ -52,21 +52,16 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
         if (!isOpen || !tripData) return;
 
         // Location updates
+        // Location updates
         (window as any).onTripLocationUpdate = (data: { lat: number; lon: number; distance: number }) => {
-            activeTripStorage.updateLocation(data.lat, data.lon);
+            if (!tripData) return;
 
-            // Update distance based on status
-            if (tripData.status === 'on_way') {
-                activeTripStorage.updateMetrics({
-                    on_way_distance_km: tripData.on_way_distance_km + data.distance
-                });
-            } else if (tripData.status === 'in_progress') {
-                activeTripStorage.updateMetrics({
-                    trip_distance_km: tripData.trip_distance_km + data.distance
-                });
-            }
+            // Updated: Only handle map path updates here. 
+            // Metrics (distance/cost) are now handled by updateTripMetrics in page.tsx 
+            // which broadcasts to activeTripStorage.
+            activeTripStorage.updateLocation(data.lat, data.lon, undefined, true);
 
-            // Reload
+            // Reload local state to refresh UI (map path)
             setTripData(activeTripStorage.getTrip());
         };
 

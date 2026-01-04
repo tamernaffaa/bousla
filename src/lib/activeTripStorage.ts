@@ -122,15 +122,15 @@ class ActiveTripStorage {
     /**
      * Update specific fields of the active trip
      */
-    updateTrip(updates: Partial<ActiveTripData>): void {
+    updateTrip(updates: Partial<ActiveTripData>, skipSync: boolean = false): void {
         const trip = this.getTrip();
         if (!trip) {
             console.warn('⚠️ No active trip to update');
             return;
         }
 
-        // Track what changed for sync
-        const changedFields = Object.keys(updates).map(field => ({
+        // Track what changed for sync (only if not skipping sync)
+        const changedFields = skipSync ? [] : Object.keys(updates).map(field => ({
             field,
             value: updates[field as keyof ActiveTripData],
             timestamp: Date.now()
@@ -140,18 +140,21 @@ class ActiveTripStorage {
         const updatedTrip: ActiveTripData = {
             ...trip,
             ...updates,
-            pending_updates: [...trip.pending_updates, ...changedFields],
-            sync_status: 'pending'
+            pending_updates: skipSync ? trip.pending_updates : [...trip.pending_updates, ...changedFields],
+            sync_status: skipSync ? trip.sync_status : 'pending'
         };
 
         this.saveTrip(updatedTrip);
-        this.addToSyncQueue(trip.trip_id);
+
+        if (!skipSync) {
+            this.addToSyncQueue(trip.trip_id);
+        }
     }
 
     /**
      * Update location and add to route
      */
-    updateLocation(lat: number, lon: number, accuracy?: number): void {
+    updateLocation(lat: number, lon: number, accuracy?: number, skipSync: boolean = false): void {
         const trip = this.getTrip();
         if (!trip) return;
 
@@ -171,7 +174,7 @@ class ActiveTripStorage {
         this.updateTrip({
             last_location: lastLocation,
             route_points: [...trip.route_points, newPoint]
-        });
+        }, skipSync);
     }
 
     /**
@@ -183,7 +186,7 @@ class ActiveTripStorage {
         waiting_duration_min?: number;
         trip_distance_km?: number;
         trip_duration_min?: number;
-    }): void {
+    }, skipSync: boolean = false): void {
         const trip = this.getTrip();
         if (!trip) return;
 
@@ -212,7 +215,7 @@ class ActiveTripStorage {
             waiting_cost: Math.round(waiting_cost * 100) / 100,
             trip_cost: Math.round(trip_cost * 100) / 100,
             total_cost: Math.round(total_cost * 100) / 100
-        });
+        }, skipSync);
     }
 
     /**
