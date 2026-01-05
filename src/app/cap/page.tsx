@@ -454,8 +454,27 @@ export default function CaptainApp() {
 
     window.updateLocation = handleLocationUpdate;
 
+    // 🆕 تعريف دالة استقبال مقاييس الرحلة (Active Trip)
+    (window as any).updateTripMetrics = (metrics: any) => {
+      // console.log('Received trip metrics:', metrics);
+      // تحديث التخزين المحلي للرحلة النشطة
+      activeTripStorage.updateMetrics(metrics, true);
+    };
+
+    // 🆕 تعريف دالة استقبال التكلفة (Legacy/Callback)
+    (window as any).update_cost = (km: string, min: string, price: string) => {
+      // console.log('Received legacy cost update:', { km, min, price });
+      setTrackingData({
+        distance: km,
+        time: min,
+        price: price
+      });
+    };
+
     return () => {
       window.updateLocation = () => { };
+      (window as any).updateTripMetrics = () => { };
+      (window as any).update_cost = () => { };
     };
   }, [icons.carIcon, captainId, active]);
 
