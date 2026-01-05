@@ -456,14 +456,24 @@ export default function CaptainApp() {
 
     // 🆕 تعريف دالة استقبال مقاييس الرحلة (Active Trip)
     (window as any).updateTripMetrics = (metrics: any) => {
-      // console.log('Received trip metrics:', metrics);
+      console.log('Received trip metrics:', metrics);
+
+      // DEBUG: Show toast to confirm reception (remove later)
+      // toast.info(`M: ${JSON.stringify(metrics, null, 2)}`, { autoClose: 2000 });
+
+      if (metrics.on_way_distance_km !== undefined && Number(metrics.on_way_distance_km) > 0) {
+        // toast.success(`KM: ${metrics.on_way_distance_km}`);
+      }
+
       // تحديث التخزين المحلي للرحلة النشطة
       activeTripStorage.updateMetrics(metrics, true);
     };
 
     // 🆕 تعريف دالة استقبال التكلفة (Legacy/Callback)
     (window as any).update_cost = (km: string, min: string, price: string) => {
-      // console.log('Received legacy cost update:', { km, min, price });
+      console.log('Received legacy cost update:', { km, min, price });
+      // toast.info(`C: ${km} km`, { autoClose: 1000 });
+
       setTrackingData({
         distance: km,
         time: min,
