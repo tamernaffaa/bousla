@@ -230,6 +230,8 @@ class ActiveTripStorage {
         const trip = this.getTrip();
         if (!trip) return false;
 
+        console.log(`🔄 Changing trip status from "${trip.status}" to "${newStatus}"`);
+
         const now = new Date().toISOString();
         const updates: Partial<ActiveTripData> = { status: newStatus };
 
@@ -237,23 +239,30 @@ class ActiveTripStorage {
         switch (newStatus) {
             case 'waiting':
                 updates.arrived_at = now;
+                console.log(`⏰ Setting arrived_at: ${now}`);
                 break;
             case 'in_progress':
                 updates.started_at = now;
+                console.log(`⏰ Setting started_at: ${now}`);
                 break;
             case 'completed':
                 updates.completed_at = now;
+                console.log(`⏰ Setting completed_at: ${now}`);
                 break;
         }
 
         // Always update locally first (offline-first approach)
         this.updateTrip(updates);
+        console.log(`💾 Status updated locally to: ${newStatus}`);
 
         // Try to sync in background if online, but don't block on it
         if (navigator.onLine) {
+            console.log(`🌐 Online - attempting background sync...`);
             this.syncTrip(trip.trip_id).catch(err => {
                 console.warn('Background sync failed, will retry later:', err);
             });
+        } else {
+            console.log(`📴 Offline - sync will happen when connection is restored`);
         }
 
         // Always return true since local update succeeded
@@ -319,34 +328,42 @@ class ActiveTripStorage {
 
         try {
             console.log(`🔄 Syncing trip ${tripId} to database...`);
+            console.log(`📊 Trip Status: ${trip.status}`);
+            console.log(`📏 Distances: OnWay=${trip.on_way_distance_km}km, Trip=${trip.trip_distance_km}km`);
+            console.log(`⏱️ Durations: OnWay=${trip.on_way_duration_min}min, Waiting=${trip.waiting_duration_min}min, Trip=${trip.trip_duration_min}min`);
+            console.log(`💰 Total Cost: ${trip.total_cost}`);
+
+            const dataToSync = {
+                trip_id: trip.trip_id,
+                order_id: trip.order_id,
+                captain_id: trip.captain_id,
+                customer_id: trip.customer_id,
+                status: trip.status,
+                accepted_at: trip.accepted_at,
+                arrived_at: trip.arrived_at,
+                started_at: trip.started_at,
+                completed_at: trip.completed_at,
+                on_way_distance_km: trip.on_way_distance_km,
+                on_way_duration_min: trip.on_way_duration_min,
+                waiting_duration_min: trip.waiting_duration_min,
+                trip_distance_km: trip.trip_distance_km,
+                trip_duration_min: trip.trip_duration_min,
+                base_cost: trip.base_cost,
+                km_price: trip.km_price,
+                min_price: trip.min_price,
+                total_cost: trip.total_cost,
+                captain_name: trip.captain_name,
+                captain_phone: trip.captain_phone,
+                captain_photo: trip.captain_photo,
+                updated_at: new Date().toISOString()
+            };
+
+            console.log('📤 Sending to active_trips:', JSON.stringify(dataToSync, null, 2));
 
             // Upsert to active_trips table
             const { error } = await supabase
                 .from('active_trips')
-                .upsert({
-                    trip_id: trip.trip_id,
-                    order_id: trip.order_id,
-                    captain_id: trip.captain_id,
-                    customer_id: trip.customer_id,
-                    status: trip.status,
-                    accepted_at: trip.accepted_at,
-                    arrived_at: trip.arrived_at,
-                    started_at: trip.started_at,
-                    completed_at: trip.completed_at,
-                    on_way_distance_km: trip.on_way_distance_km,
-                    on_way_duration_min: trip.on_way_duration_min,
-                    waiting_duration_min: trip.waiting_duration_min,
-                    trip_distance_km: trip.trip_distance_km,
-                    trip_duration_min: trip.trip_duration_min,
-                    base_cost: trip.base_cost,
-                    km_price: trip.km_price,
-                    min_price: trip.min_price,
-                    total_cost: trip.total_cost,
-                    captain_name: trip.captain_name,
-                    captain_phone: trip.captain_phone,
-                    captain_photo: trip.captain_photo,
-                    updated_at: new Date().toISOString()
-                });
+                .upsert(dataToSync);
 
             if (error) throw error;
 
