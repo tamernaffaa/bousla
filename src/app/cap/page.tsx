@@ -326,6 +326,14 @@ export default function CaptainApp() {
     }
   };
 
+  // Make sendToKotlin available globally for child components
+  useEffect(() => {
+    (window as any).sendToKotlin = sendToKotlin;
+    return () => {
+      delete (window as any).sendToKotlin;
+    };
+  }, []);
+
   // دالة المحاكاة المعدلة
   const mockKotlinResponse = (action: string, message: string) => {
     console.log(`Mock Kotlin response - Action: ${action}, Message: ${message}`);
