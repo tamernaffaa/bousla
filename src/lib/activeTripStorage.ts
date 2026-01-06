@@ -336,8 +336,9 @@ class ActiveTripStorage {
             const dataToSync = {
                 trip_id: trip.trip_id,
                 order_id: trip.order_id,
-                captain_id: trip.captain_id,
-                customer_id: trip.customer_id,
+                // Only include captain_id and customer_id if they exist (don't overwrite with null)
+                ...(trip.captain_id && { captain_id: trip.captain_id }),
+                ...(trip.customer_id && { customer_id: trip.customer_id }),
                 status: trip.status,
                 accepted_at: trip.accepted_at,
                 arrived_at: trip.arrived_at,
@@ -351,6 +352,8 @@ class ActiveTripStorage {
                 base_cost: trip.base_cost,
                 km_price: trip.km_price,
                 min_price: trip.min_price,
+                free_on_way_km: trip.free_on_way_km,
+                free_waiting_min: trip.free_waiting_min,
                 total_cost: trip.total_cost,
                 captain_name: trip.captain_name,
                 captain_phone: trip.captain_phone,
