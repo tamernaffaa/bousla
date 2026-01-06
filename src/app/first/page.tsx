@@ -12,6 +12,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { toast } from 'react-toastify';
 import { activeTripStorage } from '../../lib/activeTripStorage';
 import ActiveTripView from './ActiveTripView';
+import CustomerTripInvoiceModal from '../cus/TripInvoiceModal';
 
 interface Trip {
   id: number;
@@ -75,6 +76,8 @@ export default function HomePage() {
   } | null>(null);
   const [captainsNotified, setCaptainsNotified] = useState(0);
   const [showActiveTripView, setShowActiveTripView] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [invoiceData, setInvoiceData] = useState<any>(null);
 
   // Ads Data
   const ads = [
@@ -133,6 +136,48 @@ export default function HomePage() {
     fetchServices();
   }, []);
 
+  const handleFinalizeTrip = async (captainRating: number) => {
+    try {
+      if (!invoiceData) return;
+
+      // 1. Update customer rating in Supreme (orders table)
+      // Note: For security, ideally this should be an RPC or backend endpoint,
+      // but for now we update directly if RLS allows, or via a special edge function.
+      // Assuming we can update 'captain_rating' on the order.
+
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          cap_rate: captainRating,
+          // We might also want to set payment_status = 'paid' here
+          payment_status: 'paid'
+        })
+        .eq('id', invoiceData.order_id);
+
+      if (error) console.warn('Error updating rating:', error);
+
+      // 2. Clear local storage
+      activeTripStorage.clearTrip();
+      localStorage.removeItem('active_order');
+      setActiveOrder(null);
+
+      // 3. Close modals
+      setShowInvoice(false);
+      setShowActiveTripView(false);
+      setInvoiceData(null);
+
+      toast.success('شكراً لك! رحلة سعيدة 🌟');
+      playNotificationSound('تم الدفع بنجاح ✅', 'شكراً لاستخدامك بوصلة.');
+
+      // Refresh trips history
+      fetchTrips();
+
+    } catch (e) {
+      console.error('Error finalizing trip:', e);
+      toast.error('حدث خطأ، يرجى المحاولة مرة أخرى');
+    }
+  };
+
   // Load Active Order from localStorage
   useEffect(() => {
     const storedOrder = localStorage.getItem('active_order');
@@ -151,7 +196,7 @@ export default function HomePage() {
           })
           .on('broadcast', { event: 'order_accepted' }, (payload) => {
             if (payload.payload.order_id === order.order_id) {
-              console.log('⚡ Order accepted via broadcast!', payload.payload);
+              console.log('tamer ⚡ Order accepted via broadcast!', payload.payload);
               toast.success(`🎉 تم قبول طلبك بواسطة الكابتن!`);
               toast.success(`🎉 تم قبول طلبك بواسطة الكابتن!`);
               playNotificationSound('تم قبول الطلب! 🎉', 'وافق الكابتن على طلبك وهو في الطريق إليك.');
@@ -196,25 +241,25 @@ export default function HomePage() {
 
               activeTripStorage.saveTrip(activeTripData);
               setShowActiveTripView(true);
-              console.log('🚗 Active trip created for customer');
-              console.log('✅ ActiveTripView should now be visible');
+              console.log('tamer 🚗 Active trip created for customer');
+              console.log('tamer ✅ ActiveTripView should now be visible');
 
               // Subscribe to active_trips channel for this specific trip
-              console.log('🔌 Subscribing to active_trips for trip:', activeTripData.trip_id);
+              console.log('tamer 🔌 Subscribing to active_trips for trip:', activeTripData.trip_id);
               const tripChannel = supabase.channel('active_trips')
                 .on('broadcast', { event: 'status_changed' }, (statusPayload: any) => {
-                  console.log('📡 ===== RECEIVED status_changed =====');
-                  console.log('📡 Payload:', statusPayload);
+                  console.log('tamer 📡 ===== RECEIVED status_changed =====');
+                  console.log('tamer 📡 Payload:', statusPayload);
 
                   if (statusPayload.payload.trip_id === activeTripData.trip_id) {
-                    console.log('✅ Status update for our trip!');
+                    console.log('tamer ✅ Status update for our trip!');
                     const currentTrip = activeTripStorage.getTrip();
                     if (currentTrip) {
                       activeTripStorage.updateTrip({
                         ...currentTrip,
                         status: statusPayload.payload.new_status
                       });
-                      console.log('🔄 Trip status updated to:', statusPayload.payload.new_status);
+                      console.log('tamer 🔄 Trip status updated to:', statusPayload.payload.new_status);
 
                       if (statusPayload.payload.new_status === 'arrived') {
                         toast.info('وصل الكابتن إلى موقعك! 🚕');
@@ -225,9 +270,9 @@ export default function HomePage() {
                   }
                 })
                 .subscribe((status) => {
-                  console.log('🔌 Trip channel status:', status);
+                  console.log('tamer 🔌 Trip channel status:', status);
                   if (status === 'SUBSCRIBED') {
-                    console.log('✅ Subscribed to trip updates');
+                    console.log('tamer ✅ Subscribed to trip updates');
                   }
                 });
             }
@@ -272,24 +317,24 @@ export default function HomePage() {
   useEffect(() => {
     const userId = parseInt(localStorage.getItem('userId') || '0');
 
-    console.log('🔍 DEBUG: Subscription useEffect running');
-    console.log('🔍 DEBUG: userId =', userId);
-    console.log('🔍 DEBUG: supabase =', typeof supabase);
+    console.log('tamer 🔍 DEBUG: Subscription useEffect running');
+    console.log('tamer 🔍 DEBUG: userId =', userId);
+    console.log('tamer 🔍 DEBUG: supabase =', typeof supabase);
 
     if (!userId) {
       console.warn('⚠️ No userId, cannot subscribe');
       return;
     }
 
-    console.log('🔌 Subscribing to active_trips channel for user:', userId);
+    console.log('tamer 🔌 Subscribing to active_trips channel for user:', userId);
 
     const channel = supabase.channel('active_trips')
       .on('broadcast', { event: 'trip_created' }, (payload: any) => {
-        console.log('📡 ===== RECEIVED trip_created =====');
-        console.log('📡 Full payload:', JSON.stringify(payload, null, 2));
+        console.log('tamer 📡 ===== RECEIVED trip_created =====');
+        console.log('tamer 📡 Full payload:', JSON.stringify(payload, null, 2));
 
         if (payload.payload.customer_id === userId) {
-          console.log('✅ Trip is for this customer, creating local trip');
+          console.log('tamer ✅ Trip is for this customer, creating local trip');
 
           // إنشاء رحلة نشطة للزبون
           const tripData = {
@@ -328,12 +373,12 @@ export default function HomePage() {
 
           activeTripStorage.saveTrip(tripData);
           setShowActiveTripView(true);
-          console.log('🚗 Active trip created for customer');
+          console.log('tamer 🚗 Active trip created for customer');
 
           // إيقاف خدمة البحث عن كابتن
           if (window.Android?.receiveMessage) {
             window.Android.receiveMessage('stop_location_tracking', '');
-            console.log('🛑 Stopped customer location tracking service');
+            console.log('tamer 🛑 Stopped customer location tracking service');
           }
 
           // إزالة الطلب النشط
@@ -342,34 +387,47 @@ export default function HomePage() {
         }
       })
       .on('broadcast', { event: 'status_changed' }, (payload: any) => {
-        console.log('📡 ===== RECEIVED status_changed =====');
-        console.log('📡 Full payload:', JSON.stringify(payload, null, 2));
-        console.log('📡 Event:', payload.event);
-        console.log('📡 Payload data:', payload.payload);
+        console.log('tamer 📡 ===== RECEIVED status_changed =====');
+        console.log('tamer 📡 Full payload:', JSON.stringify(payload, null, 2));
 
         const trip = activeTripStorage.getTrip();
-        console.log('🔍 Current trip:', trip);
+        console.log('tamer 🔍 Current trip:', trip);
 
         if (trip && trip.trip_id === payload.payload.trip_id) {
-          console.log('✅ Trip IDs match, updating...');
+          console.log('tamer ✅ Trip IDs match, updating...');
           activeTripStorage.updateTrip({
             ...trip,
             status: payload.payload.new_status
           });
-          console.log('🔄 Trip status updated to:', payload.payload.new_status);
-        } else {
-          console.warn('⚠️ Trip ID mismatch or no trip:', {
-            currentTripId: trip?.trip_id,
-            payloadTripId: payload.payload.trip_id
-          });
+          console.log('tamer 🔄 Trip status updated to:', payload.payload.new_status);
+        }
+      })
+      .on('broadcast', { event: 'trip_completed' }, (payload: any) => {
+        console.log('tamer 🏁 ===== RECEIVED trip_completed =====');
+        console.log('tamer 🏁 Full payload:', JSON.stringify(payload, null, 2));
+
+        const trip = activeTripStorage.getTrip();
+
+        // Check if this completion event is for our current trip
+        if (trip && trip.trip_id === payload.payload.trip_id) {
+          console.log('tamer ✅ Trip completion confirmed via broadcast');
+
+          // Hide active trip view
+          setShowActiveTripView(false);
+
+          // Show invoice modal
+          setInvoiceData(payload.payload);
+          setShowInvoice(true);
+
+          playNotificationSound('تم الوصول! 🎉', 'الرحلة انتهت، يرجى دفع المبلغ المستحق.');
         }
       })
       .on('broadcast', { event: 'location_update' }, (payload: any) => {
         // تحديث الموقع على الخريطة (سيتم تنفيذه لاحقاً)
-        console.log('📍 Location update:', payload);
+        console.log('tamer 📍 Location update:', payload);
       })
       .on('broadcast', { event: 'billing_update' }, (payload: any) => {
-        console.log('💰 Billing update:', payload);
+        console.log('tamer 💰 Billing update:', payload);
 
         const trip = activeTripStorage.getTrip();
         if (trip && trip.trip_id === payload.payload.trip_id) {
@@ -385,23 +443,23 @@ export default function HomePage() {
         }
       })
       .subscribe((status) => {
-        console.log('🔌 ===== SUBSCRIPTION STATUS =====');
-        console.log('🔌 Status:', status);
-        console.log('🔌 Timestamp:', new Date().toISOString());
+        console.log('tamer 🔌 ===== SUBSCRIPTION STATUS =====');
+        console.log('tamer 🔌 Status:', status);
+        console.log('tamer 🔌 Timestamp:', new Date().toISOString());
 
         if (status === 'SUBSCRIBED') {
-          console.log('✅ ===== SUCCESSFULLY SUBSCRIBED TO active_trips =====');
+          console.log('tamer ✅ ===== SUCCESSFULLY SUBSCRIBED TO active_trips =====');
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ ===== CHANNEL SUBSCRIPTION ERROR =====');
         } else if (status === 'TIMED_OUT') {
           console.error('⏱️ ===== CHANNEL SUBSCRIPTION TIMED OUT =====');
         } else {
-          console.log('📊 Other status:', status);
+          console.log('tamer 📊 Other status:', status);
         }
       });
 
     return () => {
-      console.log('🔌 Unsubscribing from active_trips channel');
+      console.log('tamer 🔌 Unsubscribing from active_trips channel');
       supabase.removeChannel(channel);
     };
   }, []);
@@ -419,7 +477,7 @@ export default function HomePage() {
         .single();
 
       if (data && (data.status === 'cap_accept' || data.status === 'accepted') && data.cap_id) {
-        console.log('🔄 Polling detected accepted order:', data);
+        console.log('tamer 🔄 Polling detected accepted order:', data);
 
         // منع التحديث المتكرر إذا كانت الحالة محدثة بالفعل
         if (activeOrder.status !== 'accepted') {
@@ -533,7 +591,7 @@ export default function HomePage() {
           isOpen={true}
           onClose={() => {
             setShowActiveTripView(false);
-            console.log('🔙 Closed active trip view');
+            console.log('tamer 🔙 Closed active trip view');
           }}
         />
       )}
@@ -819,6 +877,17 @@ export default function HomePage() {
           </main>
         </div>
       )}
+      {/* Invoice Modal */}
+      <CustomerTripInvoiceModal
+        isOpen={showInvoice}
+        tripData={invoiceData}
+        onComplete={handleFinalizeTrip}
+        onCancel={() => {
+          // Optional: prevent closing without rating/paying?
+          // For now allow closing to look at map/history
+          setShowInvoice(false);
+        }}
+      />
     </>
   );
 }

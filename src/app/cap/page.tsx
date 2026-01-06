@@ -287,7 +287,7 @@ export default function CaptainApp() {
       const trip = activeTripStorage.getTrip();
       if (trip && trip.status !== 'completed' && trip.status !== 'cancelled') {
         setShowActiveTripModal(true);
-        console.log('📱 Active trip found for captain, showing modal');
+        console.log('tamer 📱 Active trip found for captain, showing modal');
       } else {
         setShowActiveTripModal(false);
       }
@@ -376,7 +376,7 @@ export default function CaptainApp() {
   }, [payments]);
 
   const fetchLastOrders = useCallback(async () => {
-    console.log('Fetching last orders for captain:', captainId);
+    console.log('tamer Fetching last orders for captain:', captainId);
     try {
       const lastOrders = await ordersApi.getLastOrders(captainId);
       setLastorder(lastOrders);
@@ -456,7 +456,7 @@ export default function CaptainApp() {
             lng: lng,
             status: 'online'
           }
-        }).then(() => console.log('Location broadcasted'));
+        }).then(() => console.log('tamer Location broadcasted'));
       }
     };
 
@@ -464,7 +464,7 @@ export default function CaptainApp() {
 
     // 🆕 تعريف دالة استقبال مقاييس الرحلة (Active Trip)
     (window as any).updateTripMetrics = (metrics: any) => {
-      console.log('Received trip metrics:', metrics);
+      console.log('tamer Received trip metrics:', metrics);
 
       // DEBUG: Show toast to confirm reception (remove later)
       // toast.info(`M: ${JSON.stringify(metrics, null, 2)}`, { autoClose: 2000 });
@@ -479,7 +479,7 @@ export default function CaptainApp() {
 
     // 🆕 تعريف دالة استقبال التكلفة (Legacy/Callback)
     (window as any).update_cost = (km: string, min: string, price: string) => {
-      console.log('Received legacy cost update:', { km, min, price });
+      console.log('tamer Received legacy cost update:', { km, min, price });
       // toast.info(`C: ${km} km`, { autoClose: 1000 });
 
       setTrackingData({
@@ -514,7 +514,7 @@ export default function CaptainApp() {
           status: 'online',
           timestamp: Date.now()
         }
-      }).then(() => console.log('📍 Location auto-broadcasted'));
+      }).then(() => console.log('tamer 📍 Location auto-broadcasted'));
     };
 
     // Initial broadcast
@@ -579,7 +579,7 @@ export default function CaptainApp() {
   useEffect(() => {
     // تعريف دالة استقبال تحديثات الموقع من Kotlin للطلبات النشطة
     window.updateOrderLocation = (orderId: number, lat: number, lng: number) => {
-      console.log('Received location update for order:', orderId, lat, lng);
+      console.log('tamer Received location update for order:', orderId, lat, lng);
 
       // إذا كان هذا الطلب هو الطلب النشط الحالي
       if (activeRoute && activeRoute.orderId === orderId) {
@@ -604,7 +604,7 @@ export default function CaptainApp() {
     window.updateOrderRoute = (orderId: number, routeData: string) => {
       try {
         const points = JSON.parse(routeData) as Position[];
-        console.log('Received full route for order:', orderId, points.length, 'points');
+        console.log('tamer Received full route for order:', orderId, points.length, 'points');
 
         setActiveRoute({
           orderId,
@@ -634,7 +634,7 @@ export default function CaptainApp() {
 
     // Helper function for handling order broadcasts
     const handleOrderBroadcast = async (payload: any) => {
-      console.log('Received Order Broadcast:', payload);
+      console.log('tamer Received Order Broadcast:', payload);
 
       // Handle different payload formats
       // Format 1: {event: 'new_order_request', payload: {order_id, lat, lon}}
@@ -724,7 +724,7 @@ export default function CaptainApp() {
     const notifiedOrders = new Set<number>();
 
     const pollOrders = async () => {
-      console.log('🔍 Polling for available orders...');
+      console.log('tamer 🔍 Polling for available orders...');
       // 1. Fetch available orders from DB (pending + new_order)
       const availableOrders = await ordersApi.getAvailableOrders();
 
@@ -825,7 +825,7 @@ export default function CaptainApp() {
   }, []);
 
   const drawRoute = useCallback(async (startPoint: string, endPoint: string) => {
-    console.log('Attempting to draw route from:', startPoint, 'to:', endPoint);
+    console.log('tamer Attempting to draw route from:', startPoint, 'to:', endPoint);
 
     // تنظيف المسار الحالي أولاً
     clearRoute();
@@ -870,10 +870,10 @@ export default function CaptainApp() {
       return;
     }
 
-    console.log('Parsed coordinates:', { startLat, startLng, endLat, endLng });
+    console.log('tamer Parsed coordinates:', { startLat, startLng, endLat, endLng });
 
     try {
-      console.log('Fetching route from OSRM...');
+      console.log('tamer Fetching route from OSRM...');
       const response = await fetch(
         `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full`
       );
@@ -883,7 +883,7 @@ export default function CaptainApp() {
       }
 
       const data = await response.json();
-      console.log('OSRM response:', data);
+      console.log('tamer OSRM response:', data);
 
       let coordinates: [number, number][] = [];
 
@@ -897,11 +897,11 @@ export default function CaptainApp() {
           coordinates = route.geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]]);
         }
 
-        console.log('Route calculated with', coordinates.length, 'points');
+        console.log('tamer Route calculated with', coordinates.length, 'points');
       }
 
       if (coordinates.length === 0) {
-        console.log('Using straight line as fallback');
+        console.log('tamer Using straight line as fallback');
         coordinates = [
           [startLat, startLng],
           [endLat, endLng]
@@ -934,7 +934,7 @@ export default function CaptainApp() {
         }
       ]);
 
-      console.log('Route and markers set successfully');
+      console.log('tamer Route and markers set successfully');
 
     } catch (error) {
       console.error('Error calculating route:', error);
@@ -967,7 +967,7 @@ export default function CaptainApp() {
         }
       ]);
 
-      console.log('Fallback straight line route set');
+      console.log('tamer Fallback straight line route set');
     }
   }, [clearRoute, icons.redIcon, icons.greenIcon]);
 
@@ -1000,7 +1000,7 @@ export default function CaptainApp() {
   useEffect(() => {
     // تعريف دالة استقبال الطلبات من Kotlin
     window.handleNewOrder = async (orderId: number) => {
-      console.log('Received new order ID:', orderId);
+      console.log('tamer Received new order ID:', orderId);
 
       try {
         // جلب تفاصيل الطلب من API
@@ -1057,7 +1057,7 @@ export default function CaptainApp() {
   }, [drawRoute]);
 
   const openOrderDetails = useCallback(async (orderId: number) => {
-    console.log('Fetching order with ID:', orderId);
+    console.log('tamer Fetching order with ID:', orderId);
     setAcceptOrderStatus('loading');
 
     const order = await ordersApi.getById(orderId);
@@ -1117,7 +1117,7 @@ export default function CaptainApp() {
     try {
       // استخدام API الجديد مع Optimistic Locking
       const result = await ordersApi.acceptOrder(selectedOrder.id, captainId);
-      console.log('Order acceptance result:', result);
+      console.log('tamer Order acceptance result:', result);
 
       // معالجة حالة القبول من كابتن آخر
       if (result.alreadyAccepted) {
@@ -1136,7 +1136,7 @@ export default function CaptainApp() {
 
         // حفظ الطلب محلياً للعمل بدون إنترنت
         await localOrderStorage.saveOrder(selectedOrder);
-        console.log('💾 Order saved to local storage');
+        console.log('tamer 💾 Order saved to local storage');
 
         // إرسال بيانات الطلب إلى Kotlin
         const orderData = {
@@ -1194,7 +1194,7 @@ export default function CaptainApp() {
 
         // حفظ الرحلة النشطة محلياً
         activeTripStorage.saveTrip(activeTripData);
-        console.log('🚗 Active trip created and saved locally');
+        console.log('tamer 🚗 Active trip created and saved locally');
 
         // Broadcast الرحلة الجديدة للجميع (الزبون + لوحة الإدارة)
         try {
@@ -1220,7 +1220,7 @@ export default function CaptainApp() {
               timestamp: new Date().toISOString()
             }
           });
-          console.log('📡 Broadcasted trip_created to active_trips channel');
+          console.log('tamer 📡 Broadcasted trip_created to active_trips channel');
         } catch (error) {
           console.error('❌ Error broadcasting trip_created:', error);
         }
@@ -1247,14 +1247,14 @@ export default function CaptainApp() {
             trip_distance_km: 0,
             trip_duration_min: 0
           });
-          console.log('✅ Trip saved to database');
+          console.log('tamer ✅ Trip saved to database');
         } catch (dbError) {
           console.error('❌ Error saving trip to database:', dbError);
         }
 
         // بدء تتبع الموقع للرحلة النشطة
         sendToKotlin("start_trip_tracking", JSON.stringify({ trip_id: activeTripData.trip_id }));
-        console.log('📍 Started trip location tracking');
+        console.log('tamer 📍 Started trip location tracking');
 
         // بدء خدمة الخلفية
         sendToKotlin("start_background_service", JSON.stringify({
@@ -1265,22 +1265,22 @@ export default function CaptainApp() {
           km_price: parseFloat(selectedOrder.km_price || '0'),
           min_price: parseFloat(selectedOrder.min_price || '0')
         }));
-        console.log('🔧 Started background service');
+        console.log('tamer 🔧 Started background service');
 
         // إيقاف زر استقبال الطلبات
         setActive(false);
-        console.log('🛑 Stopped searching for new orders');
+        console.log('tamer 🛑 Stopped searching for new orders');
 
         // إيقاف خدمة البحث عن طلبات
         sendToKotlin("stop_location_tracking", "");
-        console.log('🛑 Stopped location tracking service');
+        console.log('tamer 🛑 Stopped location tracking service');
 
         // إغلاق نافذة تفاصيل الطلب وعرض ActiveTripModal
         setShowOrderDetails(false);
         setAcceptOrderStatus('idle');
         setSelectedOrder(null);
 
-        console.log('✅ Order accepted successfully, active trip created');
+        console.log('tamer ✅ Order accepted successfully, active trip created');
       } else {
         setAcceptOrderStatus('error');
       }
@@ -1362,7 +1362,7 @@ export default function CaptainApp() {
               fetchPayments();
             } else {
               // Try to trigger refresh via filtering if available, or just notify user
-              console.log('Payments refreshed implicitly or fetchPayments not available in scope');
+              console.log('tamer Payments refreshed implicitly or fetchPayments not available in scope');
             }
           }
         });
@@ -1428,7 +1428,7 @@ export default function CaptainApp() {
 
     // تعريف دالة استقبال الرد من Kotlin
     window.handleOpenOrderResponse = (response: string) => {
-      console.log('Open order response:', response);
+      console.log('tamer Open order response:', response);
 
       if (response !== "no_open_order") {
         try {
@@ -1462,7 +1462,7 @@ export default function CaptainApp() {
           console.error('Error parsing open order data:', error);
         }
       } else {
-        console.log('No open orders found');
+        console.log('tamer No open orders found');
       }
     };
 
@@ -1521,7 +1521,7 @@ export default function CaptainApp() {
 
   // تطوير دالة handleOpenOrder لمعالجة البيانات الكاملة
   const handleOpenOrder = useCallback((orderData: KotlinOrderData) => {
-    console.log('Received open order:', orderData);
+    console.log('tamer Received open order:', orderData);
 
     // إنشاء كائن الطلب مع جميع البيانات
     const trackingOrderData: OrderDetails = {
@@ -1580,7 +1580,7 @@ export default function CaptainApp() {
 
     // إذا كانت هناك نقاط طريق، رسم المسار
     if (orderData.start_point && orderData.end_point) {
-      console.log('Drawing route for open order:', orderData.start_point, orderData.end_point);
+      console.log('tamer Drawing route for open order:', orderData.start_point, orderData.end_point);
       drawRoute(orderData.start_point, orderData.end_point);
     } else {
       console.warn('Missing start_point or end_point in open order data');
@@ -1634,7 +1634,7 @@ export default function CaptainApp() {
   useEffect(() => {
     // New Generic Metrics Update
     (window as any).updateTripMetrics = (data: any) => {
-      console.log('Received metrics data:', data);
+      console.log('tamer Received metrics data:', data);
 
       if (!trackingOrder) return;
 
@@ -1693,7 +1693,7 @@ export default function CaptainApp() {
   useEffect(() => {
     // تعريف دالة استقبال أمر إيقاف التتبع من Kotlin
     window.handleStopTrackingButton = () => {
-      console.log('Received stop tracking button command from Android');
+      console.log('tamer Received stop tracking button command from Android');
 
       // إيقاف حالة النشاط
       setActive(false);
@@ -1769,7 +1769,7 @@ export default function CaptainApp() {
             captain_id: captainId
           });
           (window as any).Android.postMessage(message);
-          console.log('Notified Flutter to refresh services cache');
+          console.log('tamer Notified Flutter to refresh services cache');
         } catch (e) {
           console.error('Failed to notify Flutter:', e);
         }
@@ -2079,7 +2079,7 @@ export default function CaptainApp() {
           isOpen={true}
           onClose={() => {
             // لا نغلق المودال إلا عند إنهاء الرحلة
-            console.log('Active trip modal close requested');
+            console.log('tamer Active trip modal close requested');
           }}
         />
       )}

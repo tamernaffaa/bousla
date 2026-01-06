@@ -24,7 +24,7 @@ export const checkAndApplyRewards = async (
     order: OrderDetails,
     captainId: number
 ): Promise<{ applied: boolean, rewards: any[], totalAmount: number }> => {
-    console.log('Checking for rewards for order:', order.id)
+    console.log('tamer Checking for rewards for order:', order.id)
 
     try {
         // 1. جلب العروض النشطة من نوع مكافأة كابتن
@@ -37,7 +37,7 @@ export const checkAndApplyRewards = async (
             .gte('end_date', new Date().toISOString())
 
         if (error || !promotions || promotions.length === 0) {
-            console.log('No active captain rewards found')
+            console.log('tamer No active captain rewards found')
             return { applied: false, rewards: [], totalAmount: 0 }
         }
 

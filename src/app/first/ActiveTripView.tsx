@@ -53,7 +53,7 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
         const interval = setInterval(() => {
             const updatedTrip = activeTripStorage.getTrip();
             setTripData(updatedTrip);
-            // console.log('🔄 Refreshed trip data:', updatedTrip?.status);
+            // console.log('tamer 🔄 Refreshed trip data:', updatedTrip?.status);
         }, 1000);
 
         return () => clearInterval(interval);
@@ -66,19 +66,19 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
         const channel = supabase
             .channel(`trip_${tripData.trip_id}`)
             .on('broadcast', { event: 'status_update' }, (payload) => {
-                console.log('📡 Status update:', payload.payload);
+                console.log('tamer 📡 Status update:', payload.payload);
                 activeTripStorage.updateTrip({ status: payload.payload.status });
                 setTripData(activeTripStorage.getTrip());
 
                 toast.success(`تحديث: ${STATUS_LABELS[payload.payload.status as keyof typeof STATUS_LABELS]}`);
             })
             .on('broadcast', { event: 'location_update' }, (payload) => {
-                console.log('📍 Location update:', payload.payload);
+                console.log('tamer 📍 Location update:', payload.payload);
                 activeTripStorage.updateLocation(payload.payload.lat, payload.payload.lon);
                 setTripData(activeTripStorage.getTrip());
             })
             .on('broadcast', { event: 'billing_update' }, (payload) => {
-                console.log('💰 Billing update:', payload.payload);
+                console.log('tamer 💰 Billing update:', payload.payload);
                 activeTripStorage.updateTrip(payload.payload);
                 setTripData(activeTripStorage.getTrip());
             })

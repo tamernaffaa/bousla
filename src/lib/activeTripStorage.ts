@@ -274,7 +274,7 @@ class ActiveTripStorage {
      */
     clearTrip(): void {
         localStorage.removeItem(this.storageKey);
-        console.log('🗑️ Active trip cleared');
+        console.log('tamer 🗑️ Active trip cleared');
     }
 
     /**
@@ -361,7 +361,7 @@ class ActiveTripStorage {
                 updated_at: new Date().toISOString()
             };
 
-            console.log('📤 Sending to active_trips:', JSON.stringify(dataToSync, null, 2));
+            console.log('tamer 📤 Sending to active_trips:', JSON.stringify(dataToSync, null, 2));
 
             // Upsert to active_trips table
             const { error } = await supabase
