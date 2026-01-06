@@ -124,6 +124,9 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
                 if (typeof window !== 'undefined' && (window as any).sendToKotlin) {
                     (window as any).sendToKotlin('change_trip_status', JSON.stringify({ status: newStatus }));
                     console.log('📱 Sent status change to Flutter:', newStatus);
+                    alert(`✅ تم إرسال الحالة إلى Flutter: ${newStatus}`); // Temporary debug
+                } else {
+                    alert('❌ sendToKotlin غير موجود!'); // Temporary debug
                 }
 
                 // Broadcast status change to active_trips channel
