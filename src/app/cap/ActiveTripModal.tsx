@@ -120,6 +120,12 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
                 const updatedTrip = activeTripStorage.getTrip();
                 setTripData(updatedTrip);
 
+                // Notify Flutter about status change
+                if (typeof window !== 'undefined' && (window as any).sendToKotlin) {
+                    (window as any).sendToKotlin('change_trip_status', JSON.stringify({ status: newStatus }));
+                    console.log('📱 Sent status change to Flutter:', newStatus);
+                }
+
                 // Broadcast status change to active_trips channel
                 try {
                     await supabase.channel('active_trips').send({
