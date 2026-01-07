@@ -16,29 +16,12 @@ import { toast } from 'react-toastify';
 interface TripInvoiceModalProps {
     isOpen: boolean;
     tripData: ActiveTripData;
-    onComplete: (customerRating: number) => void;
     onCancel: () => void;
+    readOnly?: boolean;
 }
 
-export default function TripInvoiceModal({ isOpen, tripData, onComplete, onCancel }: TripInvoiceModalProps) {
+export default function TripInvoiceModal({ isOpen, tripData, onCancel, readOnly }: TripInvoiceModalProps) {
     const [customerRating, setCustomerRating] = useState(5);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const handleComplete = async () => {
-        if (customerRating === 0) {
-            toast.error('يرجى تقييم الزبون');
-            return;
-        }
-
-        setIsSubmitting(true);
-        try {
-            await onComplete(customerRating);
-        } catch (error) {
-            console.error('Error completing trip:', error);
-            toast.error('حدث خطأ أثناء إنهاء الرحلة');
-            setIsSubmitting(false);
-        }
-    };
 
     return (
         <AnimatePresence>
@@ -185,18 +168,18 @@ export default function TripInvoiceModal({ isOpen, tripData, onComplete, onCance
                             <div className="flex gap-3">
                                 <button
                                     onClick={onCancel}
-                                    disabled={isSubmitting}
-                                    className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-300 disabled:opacity-50 transition-colors"
+                                    className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors"
                                 >
-                                    إلغاء
+                                    إغلاق
                                 </button>
-                                <button
-                                    onClick={handleComplete}
-                                    disabled={isSubmitting || customerRating === 0}
-                                    className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-bold hover:from-green-600 hover:to-green-700 disabled:opacity-50 transition-all"
-                                >
-                                    {isSubmitting ? 'جاري الإنهاء...' : 'إنهاء وتأكيد'}
-                                </button>
+                                {!readOnly && (
+                                    <button
+                                        disabled={customerRating === 0}
+                                        className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-bold hover:from-green-600 hover:to-green-700 disabled:opacity-50 transition-all"
+                                    >
+                                        إنهاء وتأكيد
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </motion.div>

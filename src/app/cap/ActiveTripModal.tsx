@@ -393,10 +393,28 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
                                     {/* Complete Trip Button (only in in_progress status) */}
                                     {tripData.status === 'in_progress' && (
                                         <button
-                                            onClick={() => setShowInvoice(true)}
-                                            className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-4 rounded-xl font-bold text-lg hover:from-purple-700 hover:to-purple-800 transition-all"
+                                            onClick={async () => {
+                                                setIsLoading(true);
+                                                try {
+                                                    // إنهاء الرحلة فعليًا
+                                                    await supabase.rpc('complete_trip', {
+                                                        order_id: tripData.order_id,
+                                                        total_cost: tripData.total_cost
+                                                    });
+                                                    activeTripStorage.clearTrip();
+                                                    setTripData({ ...tripData, status: 'completed' });
+                                                    toast.success('تم إنهاء الرحلة بنجاح! 🎉');
+                                                    setShowInvoice(true);
+                                                } catch (error) {
+                                                    toast.error('حدث خطأ أثناء إنهاء الرحلة');
+                                                } finally {
+                                                    setIsLoading(false);
+                                                }
+                                            }}
+                                            disabled={isLoading}
+                                            className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-4 rounded-xl font-bold text-lg hover:from-purple-700 hover:to-purple-800 transition-all disabled:opacity-50"
                                         >
-                                            🏁 إنهاء الرحلة
+                                            {isLoading ? 'جاري الإنهاء...' : '🏁 إنهاء الرحلة'}
                                         </button>
                                     )}
 
@@ -422,8 +440,8 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
                     <TripInvoiceModal
                         isOpen={showInvoice}
                         tripData={tripData}
-                        onComplete={handleCompleteTrip}
                         onCancel={() => setShowInvoice(false)}
+                        readOnly={true}
                     />
                 )
             }
