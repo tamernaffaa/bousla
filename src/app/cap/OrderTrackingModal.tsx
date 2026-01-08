@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { finishTrip } from '../../lib/finishTrip';
 
 export type myorder = {
   id: number;
@@ -72,6 +73,27 @@ const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
     price: order.cost
   });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
+  // زر إنهاء الرحلة عند المرحلة الأخيرة
+  const handleFinishTrip = async () => {
+    setIsFinishing(true);
+    try {
+      await finishTrip({
+        tripData: {
+          // تحويل order إلى tripData المتوقع (يجب التحقق من الحقول المطلوبة)
+          trip_id: order.id,
+          order_id: order.id,
+          total_cost: Number(order.cost),
+          // إضافة أي حقول أخرى مطلوبة منطقياً من order
+        },
+        customerRating: 5,
+        onSuccess: () => {},
+        onError: () => {}
+      });
+    } finally {
+      setIsFinishing(false);
+    }
+  };
 
   useEffect(() => {
     if (trackingData) {
@@ -201,25 +223,31 @@ const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
         </div>
 
         {/* زر التالي الكبير */}
-        <button
-          onClick={handleNextStatus}
-          disabled={getStatusIndex(currentStatus) === STATUS_STEPS.length - 1 || isUpdating}
-          className="w-full h-14 bg-blue-600 text-white rounded-lg disabled:bg-gray-400 text-base font-semibold shadow-md hover:bg-blue-700 transition-colors flex items-center justify-center"
-        >
-          {isUpdating ? (
-            <div className="flex items-center">
-              <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              جاري التحديث...
-            </div>
-          ) : (
-            getStatusIndex(currentStatus) === STATUS_STEPS.length - 1 
-              ? 'تم الانتهاء' 
-              : 'الانتقال للمرحلة التالية'
-          )}
-        </button>
+        {getStatusIndex(currentStatus) === STATUS_STEPS.length - 1 ? (
+          <button
+            onClick={handleFinishTrip}
+            disabled={isFinishing}
+            className="w-full h-14 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg text-base font-semibold shadow-md hover:from-purple-700 hover:to-purple-800 transition-all disabled:opacity-50 flex items-center justify-center"
+          >
+            {isFinishing ? 'جاري الإنهاء...' : '🏁 إنهاء الرحلة'}
+          </button>
+        ) : (
+          <button
+            onClick={handleNextStatus}
+            disabled={isUpdating}
+            className="w-full h-14 bg-blue-600 text-white rounded-lg disabled:bg-gray-400 text-base font-semibold shadow-md hover:bg-blue-700 transition-colors flex items-center justify-center"
+          >
+            {isUpdating ? (
+              <div className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                جاري التحديث...
+              </div>
+            ) : 'الانتقال للمرحلة التالية'}
+          </button>
+        )}
       </div>
 
           {/* الأزرار الدائرية */}
