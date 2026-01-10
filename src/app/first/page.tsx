@@ -442,6 +442,47 @@ export default function HomePage() {
           });
         }
       })
+      // Listen for database changes on active_trips table
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'active_trips' },
+        (payload: any) => {
+          console.log('tamer 🔄 ===== POSTGRES UPDATE on active_trips =====');
+          console.log('tamer 🔄 Payload:', JSON.stringify(payload, null, 2));
+
+          const trip = activeTripStorage.getTrip();
+          if (trip && trip.order_id === payload.new.order_id) {
+            console.log('tamer ✅ Update is for our trip!');
+
+            // Update trip data from database
+            activeTripStorage.updateTrip({
+              status: payload.new.status,
+              on_way_distance_km: parseFloat(payload.new.on_way_distance_km || '0'),
+              on_way_duration_min: parseInt(payload.new.on_way_duration_min || '0'),
+              waiting_duration_min: parseInt(payload.new.waiting_duration_min || '0'),
+              trip_distance_km: parseFloat(payload.new.trip_distance_km || '0'),
+              trip_duration_min: parseInt(payload.new.trip_duration_min || '0'),
+              total_cost: parseFloat(payload.new.total_cost || '0')
+            }, true); // skipSync = true since it's coming from database
+
+            console.log('tamer 🔄 Trip updated from database:', payload.new.status);
+
+            // Show toast for status changes
+            if (payload.old.status !== payload.new.status) {
+              const statusMessages: Record<string, string> = {
+                'waiting': 'وصل الكابتن إلى موقعك! 🚕',
+                'in_progress': 'بدأت الرحلة! 🚗',
+                'completed': 'تم الوصول! 🎉'
+              };
+
+              const message = statusMessages[payload.new.status];
+              if (message) {
+                toast.info(message);
+                playNotificationSound('تحديث الرحلة', message);
+              }
+            }
+          }
+        }
+      )
       .subscribe((status) => {
         console.log('tamer 🔌 ===== SUBSCRIPTION STATUS =====');
         console.log('tamer 🔌 Status:', status);
