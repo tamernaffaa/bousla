@@ -178,8 +178,8 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
         // Clear trip data when invoice is closed
         activeTripStorage.clearTrip();
         setShowInvoice(false);
-        // Optionally close the modal
-        onClose();
+        // Don't close the main modal - let it close naturally when tripData becomes null
+        // The useEffect will handle closing when there's no trip data
     };
 
     if (!tripData) return null;

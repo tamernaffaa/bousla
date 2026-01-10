@@ -273,6 +273,32 @@ class ActiveTripStorage {
         this.updateTrip(updates);
         console.log(`💾 Status updated locally to: ${newStatus}`);
 
+        // Update database directly
+        try {
+            const dbUpdates: any = {
+                status: newStatus,
+                updated_at: now
+            };
+
+            // Add timestamp fields
+            if (newStatus === 'waiting') dbUpdates.arrived_at = now;
+            if (newStatus === 'in_progress') dbUpdates.started_at = now;
+            if (newStatus === 'completed') dbUpdates.completed_at = now;
+
+            const { error } = await supabase
+                .from('active_trips')
+                .update(dbUpdates)
+                .eq('order_id', trip.order_id);
+
+            if (error) {
+                console.error('❌ Error updating database:', error);
+            } else {
+                console.log(`✅ Database updated successfully: ${newStatus}`);
+            }
+        } catch (dbError) {
+            console.error('❌ Database update failed:', dbError);
+        }
+
         // Broadcast status change to customer
         try {
             const channel = this.getBroadcastChannel();
