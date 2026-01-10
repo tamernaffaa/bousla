@@ -18,7 +18,6 @@ import { ProfileMenu as DynamicProfileMenu } from './menu/ProfileMenu';
 import { BetterLuckMessage } from './BetterLuckMessage';
 import { OrderDetailsModal } from './OrderDetailsModal';
 import ActiveTripModal from './ActiveTripModal';
-import OrderTrackingModal from './OrderTrackingModal';
 import { RejectedOrdersModal } from './RejectedOrdersModal';
 import { checkAndApplyRewards } from './lib/rewardHandler';
 import { localOrderStorage } from '../../lib/localOrderStorage';
@@ -2058,24 +2057,7 @@ export default function CaptainApp() {
 
       {showMessage && <BetterLuckMessage onClose={() => setShowMessage(false)} />}
 
-      {showOrderTracking && trackingOrder && (
-        <div className="fixed bottom-0 left-0 right-0 z-50">
-          <OrderTrackingModal
-            order={trackingOrder}
-            trackingData={trackingData}
-            initialStatus={trackingOrder.status}
-            onNextStatus={handleNextStatus}
-            onCallCustomer={handleCallCustomer}
-            onPokeCustomer={handlePokeCustomer}
-            onCallCompany={handleCallCompany}
-            onCallEmergency={handleCallEmergency}
-            onOpenYandex={handleOpenYandex}
-            onStartRouteTracking={() => sendToKotlin("start_route_tracking", trackingOrder.id.toString())}
-            onPauseRouteTracking={() => sendToKotlin("pause_route_tracking", trackingOrder.id.toString())}
-            onStopRouteTracking={stopRouteTracking}
-          />
-        </div>
-      )}
+
 
       {/* Active Trip Modal */}
       {showActiveTripModal && (
