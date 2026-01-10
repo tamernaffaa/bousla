@@ -259,6 +259,24 @@ class ActiveTripStorage {
         this.updateTrip(updates);
         console.log(`💾 Status updated locally to: ${newStatus}`);
 
+        // Broadcast status change to customer
+        try {
+            await supabase.channel('active_trips').send({
+                type: 'broadcast',
+                event: 'status_changed',
+                payload: {
+                    trip_id: trip.trip_id,
+                    order_id: trip.order_id,
+                    new_status: newStatus,
+                    timestamp: now
+                }
+            });
+            console.log(`📡 Broadcasted status_changed: ${newStatus}`);
+        } catch (broadcastError) {
+            console.error('❌ Error broadcasting status change:', broadcastError);
+            // Don't fail the operation if broadcast fails
+        }
+
         // Try to sync in background if online, but don't block on it
         if (navigator.onLine) {
             console.log(`🌐 Online - attempting background sync...`);
