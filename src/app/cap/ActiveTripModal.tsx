@@ -128,10 +128,28 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
         if (!tripData) return;
         setIsLoading(true);
         try {
-            // تحديث الحالة محلياً (مثال)
-            setTripData({ ...tripData, status: nextStatus });
-            toast.success('تم تحديث حالة الرحلة!');
+            // تحديث الحالة في activeTripStorage (سيتم الحفظ تلقائياً)
+            const success = await activeTripStorage.changeStatus(nextStatus);
+
+            if (success) {
+                // تحديث الحالة المحلية فوراً
+                setTripData({ ...tripData, status: nextStatus });
+                toast.success('تم تحديث حالة الرحلة!');
+
+                // إرسال التحديث إلى Kotlin
+                if (orderId) {
+                    const message = JSON.stringify({
+                        orderId: orderId,
+                        status: nextStatus,
+                        timestamp: new Date().toISOString()
+                    });
+                    sendToKotlin("trip_status_update", message);
+                }
+            } else {
+                toast.error('فشل تحديث الحالة');
+            }
         } catch (error) {
+            console.error('Error updating status:', error);
             toast.error('حدث خطأ أثناء تحديث الحالة');
         } finally {
             setIsLoading(false);
