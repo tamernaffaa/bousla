@@ -74,6 +74,10 @@ export interface ActiveTripData {
     captain_photo?: string;
     captain_rating?: number;
 
+    // Route Points (for Yandex navigation)
+    start_point?: string;
+    end_point?: string;
+
     // Sync State
     last_synced: number;
     pending_updates: Array<{

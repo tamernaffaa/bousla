@@ -1185,8 +1185,12 @@ export default function CaptainApp() {
           trip_cost: 0,
           total_cost: parseFloat(selectedOrder.f_km || '0'),
           route_points: [],
-          customer_name: '', // Will be fetched from users table if needed
-          customer_phone: '', // Will be fetched from users table if needed
+          // إضافة معلومات الزبون
+          customer_name: selectedOrder.user_name || '', // من بيانات الطلب
+          customer_phone: selectedOrder.user_phone || '', // من بيانات الطلب
+          // إضافة نقاط البداية والنهاية للـ Yandex
+          start_point: selectedOrder.start_point || '',
+          end_point: selectedOrder.end_point || '',
           last_synced: Date.now(),
           pending_updates: [],
           sync_status: 'synced' as const
