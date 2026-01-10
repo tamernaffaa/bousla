@@ -95,6 +95,20 @@ export interface ActiveTripData {
 class ActiveTripStorage {
     private storageKey = 'bousla_active_trip';
     private syncQueueKey = 'bousla_trip_sync_queue';
+    private broadcastChannel: any = null;
+
+    /**
+     * Get or create broadcast channel
+     */
+    private getBroadcastChannel() {
+        if (!this.broadcastChannel) {
+            this.broadcastChannel = supabase.channel('active_trips');
+            this.broadcastChannel.subscribe((status: string) => {
+                console.log('📡 Broadcast channel status:', status);
+            });
+        }
+        return this.broadcastChannel;
+    }
 
     /**
      * Save active trip to localStorage
@@ -261,7 +275,8 @@ class ActiveTripStorage {
 
         // Broadcast status change to customer
         try {
-            await supabase.channel('active_trips').send({
+            const channel = this.getBroadcastChannel();
+            await channel.send({
                 type: 'broadcast',
                 event: 'status_changed',
                 payload: {
