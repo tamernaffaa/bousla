@@ -60,11 +60,8 @@ export async function finishTrip({
             // Don't fail the whole operation if broadcast fails
         }
 
-        // Clear trip from local storage after a short delay
-        setTimeout(() => {
-            activeTripStorage.clearTrip();
-            console.log('🗑️ Trip cleared from local storage');
-        }, 2000);
+        // Don't clear trip automatically - let the invoice modal handle it
+        // The trip will be cleared when user closes the invoice
 
         // Call success callback
         if (onSuccess) {

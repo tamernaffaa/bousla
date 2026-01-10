@@ -174,6 +174,14 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
         }
     }
 
+    const handleCloseInvoice = () => {
+        // Clear trip data when invoice is closed
+        activeTripStorage.clearTrip();
+        setShowInvoice(false);
+        // Optionally close the modal
+        onClose();
+    };
+
     if (!tripData) return null;
     return (
         <>
@@ -434,7 +442,7 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
                     <TripInvoiceModal
                         isOpen={showInvoice}
                         tripData={tripData}
-                        onCancel={() => setShowInvoice(false)}
+                        onCancel={handleCloseInvoice}
                         readOnly={true}
                     />
                 )
