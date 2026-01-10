@@ -2077,6 +2077,7 @@ export default function CaptainApp() {
       {showActiveTripModal && (
         <ActiveTripModal
           isOpen={true}
+          orderId={trackingOrder?.id}
           onClose={() => {
             // لا نغلق المودال إلا عند إنهاء الرحلة
             console.log('tamer Active trip modal close requested');

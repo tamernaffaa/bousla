@@ -19,7 +19,21 @@ import { finishTrip } from '../../lib/finishTrip';
 interface ActiveTripModalProps {
     isOpen: boolean;
     onClose: () => void;
+    orderId?: number;
 }
+
+// Helper to send messages to Kotlin
+const sendToKotlin = (action: string, data: string) => {
+    if (typeof window !== 'undefined' && (window as any).Android) {
+        try {
+            const message = JSON.stringify({ action, data });
+            (window as any).Android.postMessage(message);
+            console.log(`Sent to Kotlin: ${action}`, data);
+        } catch (e) {
+            console.error('Failed to send to Kotlin:', e);
+        }
+    }
+};
 
 const STATUS_LABELS: Record<TripStatus, string> = {
     on_way: 'في طريقي للزبون',
@@ -37,11 +51,55 @@ const STATUS_COLORS: Record<TripStatus, string> = {
     cancelled: 'bg-red-500'
 };
 
-export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProps) {
+export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTripModalProps) {
     const [tripData, setTripData] = useState<ActiveTripData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [showInvoice, setShowInvoice] = useState(false);
     const [isExpanded, setIsExpanded] = useState(true);
+
+    // Load trip data from storage
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const trip = activeTripStorage.getTrip();
+        setTripData(trip);
+
+        // Poll for updates every second
+        const interval = setInterval(() => {
+            const updatedTrip = activeTripStorage.getTrip();
+            setTripData(updatedTrip);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [isOpen]);
+
+    // Listen for dynamic updates from Kotlin
+    useEffect(() => {
+        if (!isOpen || !tripData) return;
+
+        (window as any).updateTripMetrics = (data: any) => {
+            console.log('Received metrics data:', data);
+
+            const metrics = {
+                on_way_distance_km: parseFloat(data.on_way_distance_km || '0'),
+                on_way_duration_min: parseFloat(data.on_way_duration_min || '0'),
+                waiting_duration_min: parseFloat(data.waiting_duration_min || '0'),
+                trip_distance_km: parseFloat(data.trip_distance_km || '0'),
+                trip_duration_min: parseFloat(data.trip_duration_min || '0')
+            };
+
+            activeTripStorage.updateMetrics(metrics, true);
+            const updatedTrip = activeTripStorage.getTrip();
+            if (updatedTrip) {
+                setTripData(updatedTrip);
+            }
+        };
+
+        return () => {
+            (window as any).updateTripMetrics = undefined;
+        };
+    }, [isOpen, tripData]);
+
     // زر الطي/التوسيع
     const handleToggleExpand = () => setIsExpanded((prev) => !prev);
 
@@ -268,10 +326,14 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
                                             </button>
                                         )}
 
-                                        {/* Circular Action Buttons (from OrderTrackingModal) */}
+                                        {/* Circular Action Buttons */}
                                         <div className="pt-2 flex justify-around items-center">
                                             <button
-                                                onClick={() => window.open(`tel:${tripData.customer_phone}`)}
+                                                onClick={() => {
+                                                    if (orderId) {
+                                                        sendToKotlin("call_customer", orderId.toString());
+                                                    }
+                                                }}
                                                 className="flex flex-col items-center justify-center"
                                                 title="اتصال بالزبون"
                                             >
@@ -281,7 +343,12 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
                                                 <span className="text-xs">اتصال بالزبون</span>
                                             </button>
                                             <button
-                                                onClick={() => toast.info('تم نكز الزبون!')}
+                                                onClick={() => {
+                                                    if (orderId) {
+                                                        sendToKotlin("poke_customer", orderId.toString());
+                                                        toast.success('تم نكز الزبون!');
+                                                    }
+                                                }}
                                                 className="flex flex-col items-center justify-center"
                                                 title="نكز الزبون"
                                             >
@@ -291,7 +358,9 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
                                                 <span className="text-xs">نكز</span>
                                             </button>
                                             <button
-                                                onClick={() => toast.info('اتصال بالشركة')}
+                                                onClick={() => {
+                                                    sendToKotlin("call_company", "");
+                                                }}
                                                 className="flex flex-col items-center justify-center"
                                                 title="اتصال بالشركة"
                                             >
@@ -301,7 +370,9 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
                                                 <span className="text-xs">اتصال بالشركة</span>
                                             </button>
                                             <button
-                                                onClick={() => toast.info('اتصال طوارئ')}
+                                                onClick={() => {
+                                                    sendToKotlin("call_emergency", "");
+                                                }}
                                                 className="flex flex-col items-center justify-center"
                                                 title="اتصال طوارئ"
                                             >
@@ -311,7 +382,17 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
                                                 <span className="text-xs">اتصال بالطوارئ</span>
                                             </button>
                                             <button
-                                                onClick={() => toast.info('فتح Yandex')}
+                                                onClick={() => {
+                                                    if (tripData?.start_point && tripData?.end_point) {
+                                                        const yandexData = {
+                                                            start_point: tripData.start_point,
+                                                            end_point: tripData.end_point
+                                                        };
+                                                        sendToKotlin("open_yandex", JSON.stringify(yandexData));
+                                                    } else {
+                                                        toast.error('لا توجد إحداثيات متاحة لفتح Yandex');
+                                                    }
+                                                }}
                                                 className="flex flex-col items-center justify-center"
                                                 title="فتح Yandex"
                                             >

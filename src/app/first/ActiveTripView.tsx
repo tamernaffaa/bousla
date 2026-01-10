@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaMapMarkerAlt, FaClock, FaDollarSign, FaUser, FaPhone, FaStar } from 'react-icons/fa';
+import { FaTimes, FaMapMarkerAlt, FaClock, FaDollarSign, FaUser, FaPhone, FaStar, FaRoad } from 'react-icons/fa';
 import { activeTripStorage, ActiveTripData } from '../../lib/activeTripStorage';
 import { supabase } from '../../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
@@ -135,6 +135,52 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
             console.error('Error cancelling trip:', error);
             toast.error('فشل إلغاء الرحلة');
         }
+    };
+
+    const handlePokeCaptain = async () => {
+        if (!tripData) return;
+
+        try {
+            // Send poke notification to captain via Supabase
+            await supabase.channel('active_trips').send({
+                type: 'broadcast',
+                event: 'customer_poke',
+                payload: {
+                    trip_id: tripData.trip_id,
+                    message: 'الزبون يطلب انتباهك'
+                }
+            });
+
+            toast.success('تم نكز الكابتن!');
+        } catch (error) {
+            console.error('Error poking captain:', error);
+            toast.error('فشل إرسال النكز');
+        }
+    };
+
+    const handleOpenYandex = () => {
+        if (!tripData?.last_location) {
+            toast.error('موقع الكابتن غير متاح حالياً');
+            return;
+        }
+
+        // Try to open Yandex Maps, fallback to Google Maps
+        const lat = tripData.last_location.lat;
+        const lon = tripData.last_location.lon;
+
+        // Yandex Maps URL
+        const yandexUrl = `yandexmaps://maps.yandex.com/?pt=${lon},${lat}&z=16`;
+
+        // Google Maps fallback
+        const googleUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+
+        // Try Yandex first
+        window.location.href = yandexUrl;
+
+        // Fallback to Google Maps after a short delay
+        setTimeout(() => {
+            window.open(googleUrl, '_blank');
+        }, 500);
     };
 
     if (!tripData) return null;
@@ -287,6 +333,50 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
                 {tripData.status === 'waiting' && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
                         ⏰ أول {tripData.free_waiting_min ?? 0} دقائق انتظار مجانية
+                    </div>
+                )}
+
+                {/* Action Buttons */}
+                {!['completed', 'cancelled'].includes(tripData.status) && (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                        <h4 className="text-sm font-bold text-gray-700 mb-3 text-center">التواصل مع الكابتن</h4>
+                        <div className="flex justify-around items-center">
+                            {/* Call Captain */}
+                            <a
+                                href={`tel:${tripData.captain_phone}`}
+                                className="flex flex-col items-center justify-center"
+                                title="اتصال بالكابتن"
+                            >
+                                <div className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center mb-2 shadow-lg hover:bg-green-600 transition-colors active:scale-95">
+                                    <FaPhone className="h-6 w-6 text-white" />
+                                </div>
+                                <span className="text-xs font-semibold text-gray-700">اتصال</span>
+                            </a>
+
+                            {/* Poke Captain */}
+                            <button
+                                onClick={handlePokeCaptain}
+                                className="flex flex-col items-center justify-center"
+                                title="نكز الكابتن"
+                            >
+                                <div className="w-14 h-14 bg-yellow-500 rounded-full flex items-center justify-center mb-2 shadow-lg hover:bg-yellow-600 transition-colors active:scale-95">
+                                    <FaMapMarkerAlt className="h-6 w-6 text-white" />
+                                </div>
+                                <span className="text-xs font-semibold text-gray-700">نكز</span>
+                            </button>
+
+                            {/* Open Yandex */}
+                            <button
+                                onClick={handleOpenYandex}
+                                className="flex flex-col items-center justify-center"
+                                title="فتح الخريطة"
+                            >
+                                <div className="w-14 h-14 bg-purple-600 rounded-full flex items-center justify-center mb-2 shadow-lg hover:bg-purple-700 transition-colors active:scale-95">
+                                    <FaRoad className="h-6 w-6 text-white" />
+                                </div>
+                                <span className="text-xs font-semibold text-gray-700">خريطة</span>
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
