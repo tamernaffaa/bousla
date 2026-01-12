@@ -131,10 +131,99 @@ class ActiveTripStorage {
             if (!stored) return null;
 
             const trip = JSON.parse(stored) as ActiveTripData;
+
+            // Validate trip data is not stale (more than 24 hours old)
+            if (this.isTripStale(trip)) {
+                console.warn('⚠️ Trip data is stale, clearing...');
+                this.clearTrip();
+                return null;
+            }
+
             console.log(`📖 Loaded trip ${trip.trip_id} from local storage`);
             return trip;
         } catch (error) {
             console.error('❌ Error loading trip:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Check if trip data is stale (older than 24 hours)
+     */
+    private isTripStale(trip: ActiveTripData): boolean {
+        const lastSynced = trip.last_synced || 0;
+        const hoursSinceSync = (Date.now() - lastSynced) / (1000 * 60 * 60);
+        return hoursSinceSync > 24;
+    }
+
+    /**
+     * Validate and restore trip from database
+     */
+    async restoreTrip(tripId: number): Promise<ActiveTripData | null> {
+        try {
+            console.log(`🔄 Restoring trip ${tripId} from database...`);
+
+            // Fetch from database
+            const { data, error } = await supabase
+                .from('active_trips')
+                .select('*')
+                .eq('id', tripId)
+                .maybeSingle();
+
+            if (error || !data) {
+                console.log('⚠️ Trip not found in database');
+                this.clearTrip();
+                return null;
+            }
+
+            // Check if trip is already completed or cancelled
+            if (data.status === 'completed' || data.status === 'cancelled') {
+                console.log(`⚠️ Trip already ${data.status}, clearing local storage`);
+                this.clearTrip();
+                return null;
+            }
+
+            // Convert database format to ActiveTripData format
+            const restoredTrip: ActiveTripData = {
+                trip_id: data.id,
+                order_id: data.order_id,
+                captain_id: data.captain_id,
+                customer_id: data.customer_id,
+                status: data.status,
+                accepted_at: data.accepted_at,
+                arrived_at: data.arrived_at,
+                started_at: data.started_at,
+                completed_at: data.completed_at,
+                on_way_distance_km: data.on_way_distance_km || 0,
+                on_way_duration_min: data.on_way_duration_min || 0,
+                on_way_billable_km: data.on_way_billable_km || 0,
+                waiting_duration_min: data.waiting_duration_min || 0,
+                waiting_billable_min: data.waiting_billable_min || 0,
+                trip_distance_km: data.trip_distance_km || 0,
+                trip_duration_min: data.trip_duration_min || 0,
+                base_cost: data.base_cost || 0,
+                km_price: data.km_price || 0,
+                min_price: data.min_price || 0,
+                free_on_way_km: data.free_on_way_km || 0,
+                free_waiting_min: data.free_waiting_min || 0,
+                on_way_cost: data.on_way_cost || 0,
+                waiting_cost: data.waiting_cost || 0,
+                trip_cost: data.trip_cost || 0,
+                total_cost: data.total_cost || 0,
+                last_location: data.last_location,
+                route_points: data.route_points || [],
+                last_synced: Date.now(),
+                pending_updates: [],
+                sync_status: 'synced'
+            };
+
+            // Save to local storage
+            this.saveTrip(restoredTrip);
+
+            console.log(`✅ Trip ${tripId} restored successfully`);
+            return restoredTrip;
+        } catch (error) {
+            console.error('❌ Error restoring trip:', error);
             return null;
         }
     }

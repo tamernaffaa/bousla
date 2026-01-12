@@ -40,6 +40,7 @@ const STATUS_ICONS = {
 export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: ActiveTripViewProps) {
     const [tripData, setTripData] = useState<ActiveTripData | null>(null);
     const [estimatedArrival, setEstimatedArrival] = useState<number>(0);
+    const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
 
     // Load trip data and poll for updates
     useEffect(() => {
@@ -59,35 +60,113 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
         return () => clearInterval(interval);
     }, [isOpen]);
 
-    // Listen for updates from Realtime
+    // Listen for updates from Realtime - IMPROVED VERSION
     useEffect(() => {
         if (!isOpen || !tripData) return;
 
-        const channel = supabase
-            .channel(`trip_${tripData.trip_id}`)
-            .on('broadcast', { event: 'status_update' }, (payload) => {
-                console.log('tamer 📡 Status update:', payload.payload);
-                activeTripStorage.updateTrip({ status: payload.payload.status });
-                setTripData(activeTripStorage.getTrip());
+        console.log(`📡 Setting up realtime channel for trip ${tripData.trip_id}`);
 
-                toast.success(`تحديث: ${STATUS_LABELS[payload.payload.status as keyof typeof STATUS_LABELS]}`);
-            })
+        // Use trip-specific channel (matching captain's broadcast channel)
+        const tripChannel = supabase
+            .channel(`active_trip_${tripData.trip_id}`)
             .on('broadcast', { event: 'location_update' }, (payload) => {
-                console.log('tamer 📍 Location update:', payload.payload);
-                activeTripStorage.updateLocation(payload.payload.lat, payload.payload.lon);
+                console.log('📍 Location update:', payload.payload);
+                const data = payload.payload;
+                activeTripStorage.updateLocation(data.lat, data.lng, undefined, true);
                 setTripData(activeTripStorage.getTrip());
             })
-            .on('broadcast', { event: 'billing_update' }, (payload) => {
-                console.log('tamer 💰 Billing update:', payload.payload);
-                activeTripStorage.updateTrip(payload.payload);
+            .on('broadcast', { event: 'status_update' }, (payload) => {
+                console.log('🔄 Status update:', payload.payload);
+                const data = payload.payload;
+                activeTripStorage.updateTrip({ status: data.status }, true);
+                setTripData(activeTripStorage.getTrip());
+                toast.success(`تحديث: ${STATUS_LABELS[data.status as keyof typeof STATUS_LABELS]}`);
+            })
+            .on('broadcast', { event: 'status_changed' }, (payload) => {
+                console.log('🔄 Status changed:', payload.payload);
+                const data = payload.payload;
+                activeTripStorage.updateTrip({ status: data.new_status }, true);
+                setTripData(activeTripStorage.getTrip());
+                toast.success(`تحديث: ${STATUS_LABELS[data.new_status as keyof typeof STATUS_LABELS]}`);
+            })
+            .on('broadcast', { event: 'metrics_update' }, (payload) => {
+                console.log('💰 Metrics update:', payload.payload);
+                const data = payload.payload;
+                activeTripStorage.updateMetrics({
+                    on_way_distance_km: data.on_way_distance_km,
+                    on_way_duration_min: data.on_way_duration_min,
+                    waiting_duration_min: data.waiting_duration_min,
+                    trip_distance_km: data.trip_distance_km,
+                    trip_duration_min: data.trip_duration_min,
+                }, true);
                 setTripData(activeTripStorage.getTrip());
             })
+            .on('broadcast', { event: 'trip_completed' }, (payload) => {
+                console.log('✅ Trip completed:', payload.payload);
+                const data = payload.payload;
+                toast.success('اكتملت الرحلة!');
+                // Show rating modal or completion screen
+                setTimeout(() => {
+                    activeTripStorage.clearTrip();
+                    onClose();
+                }, 3000);
+            })
+            .on('broadcast', { event: 'trip_cancelled' }, (payload) => {
+                console.log('❌ Trip cancelled:', payload.payload);
+                toast.error('تم إلغاء الرحلة');
+                setTimeout(() => {
+                    activeTripStorage.clearTrip();
+                    onClose();
+                }, 2000);
+            })
+            .on('broadcast', { event: 'captain_reconnected' }, (payload) => {
+                console.log('🔄 Captain reconnected:', payload.payload);
+                toast.success('عاد الكابتن للاتصال');
+                setConnectionStatus('connected');
+            })
+            .subscribe((status) => {
+                console.log('Channel status:', status);
+                if (status === 'SUBSCRIBED') {
+                    setConnectionStatus('connected');
+                } else if (status === 'CLOSED') {
+                    setConnectionStatus('disconnected');
+                }
+            });
+
+        // Also listen to database changes as backup
+        const dbChannel = supabase
+            .channel(`active_trip_db_${tripData.trip_id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'active_trips',
+                    filter: `id=eq.${tripData.trip_id}`,
+                },
+                (payload) => {
+                    console.log('💾 Database update:', payload.new);
+                    const data = payload.new as any;
+                    activeTripStorage.updateTrip({
+                        status: data.status,
+                        on_way_distance_km: data.on_way_distance_km,
+                        on_way_duration_min: data.on_way_duration_min,
+                        waiting_duration_min: data.waiting_duration_min,
+                        trip_distance_km: data.trip_distance_km,
+                        trip_duration_min: data.trip_duration_min,
+                        total_cost: data.total_cost,
+                    }, true);
+                    setTripData(activeTripStorage.getTrip());
+                }
+            )
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            console.log('🔌 Cleaning up realtime channels');
+            supabase.removeChannel(tripChannel);
+            supabase.removeChannel(dbChannel);
         };
-    }, [isOpen, tripData]);
+    }, [isOpen, tripData?.trip_id]);
 
     // Calculate estimated arrival (simple calculation)
     useEffect(() => {
@@ -200,6 +279,25 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
                         </button>
                     )}
                 </div>
+
+                {/* Connection Status Indicator */}
+                {connectionStatus !== 'connected' && (
+                    <div className={`mb-3 px-3 py-2 rounded-lg flex items-center gap-2 ${connectionStatus === 'connecting'
+                            ? 'bg-yellow-100 border border-yellow-300'
+                            : 'bg-red-100 border border-red-300'
+                        }`}>
+                        <div className={`w-2 h-2 rounded-full ${connectionStatus === 'connecting'
+                                ? 'bg-yellow-500 animate-pulse'
+                                : 'bg-red-500'
+                            }`} />
+                        <span className={`text-sm font-medium ${connectionStatus === 'connecting'
+                                ? 'text-yellow-800'
+                                : 'text-red-800'
+                            }`}>
+                            {connectionStatus === 'connecting' ? 'جاري الاتصال...' : 'انقطع الاتصال - جاري إعادة المحاولة...'}
+                        </span>
+                    </div>
+                )}
 
                 {/* ETA for on_way status */}
                 {tripData.status === 'on_way' && estimatedArrival > 0 && (
