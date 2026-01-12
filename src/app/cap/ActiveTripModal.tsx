@@ -161,18 +161,27 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
 
     async function handleCompleteTrip(customerRating?: number) {
         if (!tripData) return;
+
+        // CRITICAL: Save trip data NOW before it gets cleared
+        const savedTripData = { ...tripData };
+        console.log('💾 Saved trip data for invoice:', savedTripData.trip_id);
+
         setIsLoading(true);
         try {
             await finishTrip({
-                tripData,
+                tripData: savedTripData,
                 customerRating,
                 onSuccess: () => {
+                    console.log('✅ Trip completion initiated, showing invoice...');
+                    // Update tripData with saved data to ensure invoice has data
+                    setTripData(savedTripData);
                     setShowInvoice(true);
                     setIsLoading(false);
                 },
                 onError: () => setIsLoading(false)
             });
         } catch (error) {
+            console.error('❌ Error completing trip:', error);
             setIsLoading(false);
         }
     }
