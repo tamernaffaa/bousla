@@ -51,11 +51,11 @@ export async function finishTrip({
     onError
 }: FinishTripParams): Promise<void> {
     try {
-        console.log('🏁 ========== FINISHING TRIP ==========');
-        console.log('🏁 Trip ID:', tripData.trip_id);
-        console.log('🏁 Order ID:', tripData.order_id);
-        console.log('🏁 Customer Rating:', customerRating);
-        console.log('🏁 Total Cost:', tripData.total_cost);
+        console.log('tamer 🏁 ========== FINISHING TRIP ==========');
+        console.log('tamer 🏁 Trip ID:', tripData.trip_id);
+        console.log('tamer 🏁 Order ID:', tripData.order_id);
+        console.log('tamer 🏁 Customer Rating:', customerRating);
+        console.log('tamer 🏁 Total Cost:', tripData.total_cost);
 
         // Get current trip data from storage
         const currentTrip = activeTripStorage.getTrip();
@@ -65,7 +65,7 @@ export async function finishTrip({
         }
 
         // CRITICAL: Call Flutter to complete trip and transfer data to orders table
-        console.log('📍 Step 1: Calling Flutter to complete trip...');
+        console.log('tamer 📍 Step 1: Calling Flutter to complete trip...');
         const flutterCalled = sendToKotlin('complete_trip', {
             trip_id: tripData.trip_id,
             order_id: tripData.order_id,
@@ -76,16 +76,16 @@ export async function finishTrip({
         if (!flutterCalled) {
             console.warn('⚠️ Flutter call failed, but continuing with local update');
         } else {
-            console.log('✅ Flutter called successfully');
+            console.log('tamer ✅ Flutter called successfully');
         }
 
         // Update trip status to completed locally
-        console.log('📍 Step 2: Updating local storage...');
+        console.log('tamer 📍 Step 2: Updating local storage...');
         await activeTripStorage.changeStatus('completed');
-        console.log('✅ Local storage updated');
+        console.log('tamer ✅ Local storage updated');
 
         // Broadcast trip completion on correct channel
-        console.log('📍 Step 3: Broadcasting completion...');
+        console.log('tamer 📍 Step 3: Broadcasting completion...');
         try {
             await supabase.channel(`active_trip_${tripData.trip_id}`).send({
                 type: 'broadcast',
@@ -98,7 +98,7 @@ export async function finishTrip({
                     completed_at: new Date().toISOString()
                 }
             });
-            console.log('✅ Broadcasted trip_completed event');
+            console.log('tamer ✅ Broadcasted trip_completed event');
         } catch (broadcastError) {
             console.error('❌ Error broadcasting trip completion:', broadcastError);
             // Don't fail the whole operation if broadcast fails
@@ -112,8 +112,8 @@ export async function finishTrip({
             onSuccess();
         }
 
-        console.log('✅ ========== TRIP FINISH INITIATED ==========');
-        console.log('ℹ️ Flutter will handle database operations and cleanup');
+        console.log('tamer ✅ ========== TRIP FINISH INITIATED ==========');
+        console.log('tamer ℹ️ Flutter will handle database operations and cleanup');
     } catch (error) {
         console.error('❌ ========== ERROR FINISHING TRIP ==========');
         console.error('❌ Error:', error);

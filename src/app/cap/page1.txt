@@ -378,7 +378,7 @@ const updateOrderStatus = async (orderId: number) => {
     const newActive = service.active === 1 ? 0 : 1;
     const originalActive = service.active;
 
-    console.log('tamer المعاملات المرسلة:', {
+    console.log('tamer tamer المعاملات المرسلة:', {
       ser_id: service.id,
       active: newActive
     });
@@ -390,7 +390,7 @@ const updateOrderStatus = async (orderId: number) => {
 
     try {
       const result = await updateServiceStatus(service.id, newActive);
-      console.log('tamer نتيجة التحديث:', result);
+      console.log('tamer tamer نتيجة التحديث:', result);
       console.log(`تم التحديث بنجاح`);
     } catch (error) {
       console.error('خطأ في التحديث:', error);
@@ -631,7 +631,7 @@ const handleAcceptOrder = async () => {
     const response = await updateOrderStatus(selectedOrder.id);
     
     // إذا وصلنا إلى هنا يعني أن العملية نجحت
-    console.log('tamer تم قبول الطلب بنجاح:', selectedOrder.id);
+    console.log('tamer tamer تم قبول الطلب بنجاح:', selectedOrder.id);
     setAcceptOrderStatus('success');
     
     setTimeout(() => {

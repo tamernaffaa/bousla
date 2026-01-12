@@ -251,7 +251,7 @@ class LocalOrderStorage {
      */
     clearActiveOrder(): void {
         localStorage.removeItem(this.ACTIVE_ORDER_KEY);
-        console.log('tamer 🗑️ Active order cleared');
+        console.log('tamer tamer 🗑️ Active order cleared');
     }
 
     /**

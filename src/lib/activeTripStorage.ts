@@ -104,7 +104,7 @@ class ActiveTripStorage {
         if (!this.broadcastChannel) {
             this.broadcastChannel = supabase.channel('active_trips');
             this.broadcastChannel.subscribe((status: string) => {
-                console.log('📡 Broadcast channel status:', status);
+                console.log('tamer 📡 Broadcast channel status:', status);
             });
         }
         return this.broadcastChannel;
@@ -171,7 +171,7 @@ class ActiveTripStorage {
                 .maybeSingle();
 
             if (error || !data) {
-                console.log('⚠️ Trip not found in database');
+                console.log('tamer ⚠️ Trip not found in database');
                 this.clearTrip();
                 return null;
             }
@@ -426,7 +426,7 @@ class ActiveTripStorage {
      */
     clearTrip(): void {
         localStorage.removeItem(this.storageKey);
-        console.log('tamer 🗑️ Active trip cleared');
+        console.log('tamer tamer 🗑️ Active trip cleared');
     }
 
     /**
@@ -513,7 +513,7 @@ class ActiveTripStorage {
                 updated_at: new Date().toISOString()
             };
 
-            console.log('tamer 📤 Sending to active_trips:', JSON.stringify(dataToSync, null, 2));
+            console.log('tamer tamer 📤 Sending to active_trips:', JSON.stringify(dataToSync, null, 2));
 
             // Upsert to active_trips table
             const { error } = await supabase

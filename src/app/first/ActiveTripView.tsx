@@ -54,7 +54,7 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
         const interval = setInterval(() => {
             const updatedTrip = activeTripStorage.getTrip();
             setTripData(updatedTrip);
-            // console.log('tamer 🔄 Refreshed trip data:', updatedTrip?.status);
+            // console.log('tamer tamer 🔄 Refreshed trip data:', updatedTrip?.status);
         }, 1000);
 
         return () => clearInterval(interval);
@@ -70,27 +70,27 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
         const tripChannel = supabase
             .channel(`active_trip_${tripData.trip_id}`)
             .on('broadcast', { event: 'location_update' }, (payload) => {
-                console.log('📍 Location update:', payload.payload);
+                console.log('tamer 📍 Location update:', payload.payload);
                 const data = payload.payload;
                 activeTripStorage.updateLocation(data.lat, data.lng, undefined, true);
                 setTripData(activeTripStorage.getTrip());
             })
             .on('broadcast', { event: 'status_update' }, (payload) => {
-                console.log('🔄 Status update:', payload.payload);
+                console.log('tamer 🔄 Status update:', payload.payload);
                 const data = payload.payload;
                 activeTripStorage.updateTrip({ status: data.status }, true);
                 setTripData(activeTripStorage.getTrip());
                 toast.success(`تحديث: ${STATUS_LABELS[data.status as keyof typeof STATUS_LABELS]}`);
             })
             .on('broadcast', { event: 'status_changed' }, (payload) => {
-                console.log('🔄 Status changed:', payload.payload);
+                console.log('tamer 🔄 Status changed:', payload.payload);
                 const data = payload.payload;
                 activeTripStorage.updateTrip({ status: data.new_status }, true);
                 setTripData(activeTripStorage.getTrip());
                 toast.success(`تحديث: ${STATUS_LABELS[data.new_status as keyof typeof STATUS_LABELS]}`);
             })
             .on('broadcast', { event: 'metrics_update' }, (payload) => {
-                console.log('💰 Metrics update:', payload.payload);
+                console.log('tamer 💰 Metrics update:', payload.payload);
                 const data = payload.payload;
                 activeTripStorage.updateMetrics({
                     on_way_distance_km: data.on_way_distance_km,
@@ -102,7 +102,7 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
                 setTripData(activeTripStorage.getTrip());
             })
             .on('broadcast', { event: 'trip_completed' }, (payload) => {
-                console.log('✅ Trip completed:', payload.payload);
+                console.log('tamer ✅ Trip completed:', payload.payload);
                 const data = payload.payload;
                 toast.success('اكتملت الرحلة!');
                 // Show rating modal or completion screen
@@ -112,7 +112,7 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
                 }, 3000);
             })
             .on('broadcast', { event: 'trip_cancelled' }, (payload) => {
-                console.log('❌ Trip cancelled:', payload.payload);
+                console.log('tamer ❌ Trip cancelled:', payload.payload);
                 toast.error('تم إلغاء الرحلة');
                 setTimeout(() => {
                     activeTripStorage.clearTrip();
@@ -120,12 +120,12 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
                 }, 2000);
             })
             .on('broadcast', { event: 'captain_reconnected' }, (payload) => {
-                console.log('🔄 Captain reconnected:', payload.payload);
+                console.log('tamer 🔄 Captain reconnected:', payload.payload);
                 toast.success('عاد الكابتن للاتصال');
                 setConnectionStatus('connected');
             })
             .subscribe((status) => {
-                console.log('Channel status:', status);
+                console.log('tamer Channel status:', status);
                 if (status === 'SUBSCRIBED') {
                     setConnectionStatus('connected');
                 } else if (status === 'CLOSED') {
@@ -145,7 +145,7 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
                     filter: `id=eq.${tripData.trip_id}`,
                 },
                 (payload) => {
-                    console.log('💾 Database update:', payload.new);
+                    console.log('tamer 💾 Database update:', payload.new);
                     const data = payload.new as any;
                     activeTripStorage.updateTrip({
                         status: data.status,
@@ -162,7 +162,7 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
             .subscribe();
 
         return () => {
-            console.log('🔌 Cleaning up realtime channels');
+            console.log('tamer 🔌 Cleaning up realtime channels');
             supabase.removeChannel(tripChannel);
             supabase.removeChannel(dbChannel);
         };
@@ -283,16 +283,16 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
                 {/* Connection Status Indicator */}
                 {connectionStatus !== 'connected' && (
                     <div className={`mb-3 px-3 py-2 rounded-lg flex items-center gap-2 ${connectionStatus === 'connecting'
-                            ? 'bg-yellow-100 border border-yellow-300'
-                            : 'bg-red-100 border border-red-300'
+                        ? 'bg-yellow-100 border border-yellow-300'
+                        : 'bg-red-100 border border-red-300'
                         }`}>
                         <div className={`w-2 h-2 rounded-full ${connectionStatus === 'connecting'
-                                ? 'bg-yellow-500 animate-pulse'
-                                : 'bg-red-500'
+                            ? 'bg-yellow-500 animate-pulse'
+                            : 'bg-red-500'
                             }`} />
                         <span className={`text-sm font-medium ${connectionStatus === 'connecting'
-                                ? 'text-yellow-800'
-                                : 'text-red-800'
+                            ? 'text-yellow-800'
+                            : 'text-red-800'
                             }`}>
                             {connectionStatus === 'connecting' ? 'جاري الاتصال...' : 'انقطع الاتصال - جاري إعادة المحاولة...'}
                         </span>

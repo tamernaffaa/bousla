@@ -78,7 +78,7 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
         if (!isOpen || !tripData) return;
 
         (window as any).updateTripMetrics = (data: any) => {
-            console.log('Received metrics data:', data);
+            console.log('tamer Received metrics data:', data);
 
             const metrics = {
                 on_way_distance_km: parseFloat(data.on_way_distance_km || '0'),

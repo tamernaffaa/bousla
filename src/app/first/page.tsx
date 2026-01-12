@@ -196,7 +196,7 @@ export default function HomePage() {
           })
           .on('broadcast', { event: 'order_accepted' }, (payload) => {
             if (payload.payload.order_id === order.order_id) {
-              console.log('tamer ⚡ Order accepted via broadcast!', payload.payload);
+              console.log('tamer tamer ⚡ Order accepted via broadcast!', payload.payload);
               toast.success(`🎉 تم قبول طلبك بواسطة الكابتن!`);
               toast.success(`🎉 تم قبول طلبك بواسطة الكابتن!`);
               playNotificationSound('تم قبول الطلب! 🎉', 'وافق الكابتن على طلبك وهو في الطريق إليك.');
@@ -241,25 +241,25 @@ export default function HomePage() {
 
               activeTripStorage.saveTrip(activeTripData);
               setShowActiveTripView(true);
-              console.log('tamer 🚗 Active trip created for customer');
-              console.log('tamer ✅ ActiveTripView should now be visible');
+              console.log('tamer tamer 🚗 Active trip created for customer');
+              console.log('tamer tamer ✅ ActiveTripView should now be visible');
 
               // Subscribe to active_trips channel for this specific trip
-              console.log('tamer 🔌 Subscribing to active_trips for trip:', activeTripData.trip_id);
+              console.log('tamer tamer 🔌 Subscribing to active_trips for trip:', activeTripData.trip_id);
               const tripChannel = supabase.channel('active_trips')
                 .on('broadcast', { event: 'status_changed' }, (statusPayload: any) => {
-                  console.log('tamer 📡 ===== RECEIVED status_changed =====');
-                  console.log('tamer 📡 Payload:', statusPayload);
+                  console.log('tamer tamer 📡 ===== RECEIVED status_changed =====');
+                  console.log('tamer tamer 📡 Payload:', statusPayload);
 
                   if (statusPayload.payload.trip_id === activeTripData.trip_id) {
-                    console.log('tamer ✅ Status update for our trip!');
+                    console.log('tamer tamer ✅ Status update for our trip!');
                     const currentTrip = activeTripStorage.getTrip();
                     if (currentTrip) {
                       activeTripStorage.updateTrip({
                         ...currentTrip,
                         status: statusPayload.payload.new_status
                       });
-                      console.log('tamer 🔄 Trip status updated to:', statusPayload.payload.new_status);
+                      console.log('tamer tamer 🔄 Trip status updated to:', statusPayload.payload.new_status);
 
                       if (statusPayload.payload.new_status === 'arrived') {
                         toast.info('وصل الكابتن إلى موقعك! 🚕');
@@ -270,9 +270,9 @@ export default function HomePage() {
                   }
                 })
                 .subscribe((status) => {
-                  console.log('tamer 🔌 Trip channel status:', status);
+                  console.log('tamer tamer 🔌 Trip channel status:', status);
                   if (status === 'SUBSCRIBED') {
-                    console.log('tamer ✅ Subscribed to trip updates');
+                    console.log('tamer tamer ✅ Subscribed to trip updates');
                   }
                 });
             }
@@ -317,24 +317,24 @@ export default function HomePage() {
   useEffect(() => {
     const userId = parseInt(localStorage.getItem('userId') || '0');
 
-    console.log('tamer 🔍 DEBUG: Subscription useEffect running');
-    console.log('tamer 🔍 DEBUG: userId =', userId);
-    console.log('tamer 🔍 DEBUG: supabase =', typeof supabase);
+    console.log('tamer tamer 🔍 DEBUG: Subscription useEffect running');
+    console.log('tamer tamer 🔍 DEBUG: userId =', userId);
+    console.log('tamer tamer 🔍 DEBUG: supabase =', typeof supabase);
 
     if (!userId) {
       console.warn('⚠️ No userId, cannot subscribe');
       return;
     }
 
-    console.log('tamer 🔌 Subscribing to active_trips channel for user:', userId);
+    console.log('tamer tamer 🔌 Subscribing to active_trips channel for user:', userId);
 
     const channel = supabase.channel('active_trips')
       .on('broadcast', { event: 'trip_created' }, (payload: any) => {
-        console.log('tamer 📡 ===== RECEIVED trip_created =====');
-        console.log('tamer 📡 Full payload:', JSON.stringify(payload, null, 2));
+        console.log('tamer tamer 📡 ===== RECEIVED trip_created =====');
+        console.log('tamer tamer 📡 Full payload:', JSON.stringify(payload, null, 2));
 
         if (payload.payload.customer_id === userId) {
-          console.log('tamer ✅ Trip is for this customer, creating local trip');
+          console.log('tamer tamer ✅ Trip is for this customer, creating local trip');
 
           // إنشاء رحلة نشطة للزبون
           const tripData = {
@@ -373,12 +373,12 @@ export default function HomePage() {
 
           activeTripStorage.saveTrip(tripData);
           setShowActiveTripView(true);
-          console.log('tamer 🚗 Active trip created for customer');
+          console.log('tamer tamer 🚗 Active trip created for customer');
 
           // إيقاف خدمة البحث عن كابتن
           if (window.Android?.receiveMessage) {
             window.Android.receiveMessage('stop_location_tracking', '');
-            console.log('tamer 🛑 Stopped customer location tracking service');
+            console.log('tamer tamer 🛑 Stopped customer location tracking service');
           }
 
           // إزالة الطلب النشط
@@ -387,30 +387,30 @@ export default function HomePage() {
         }
       })
       .on('broadcast', { event: 'status_changed' }, (payload: any) => {
-        console.log('tamer 📡 ===== RECEIVED status_changed =====');
-        console.log('tamer 📡 Full payload:', JSON.stringify(payload, null, 2));
+        console.log('tamer tamer 📡 ===== RECEIVED status_changed =====');
+        console.log('tamer tamer 📡 Full payload:', JSON.stringify(payload, null, 2));
 
         const trip = activeTripStorage.getTrip();
-        console.log('tamer 🔍 Current trip:', trip);
+        console.log('tamer tamer 🔍 Current trip:', trip);
 
         if (trip && trip.trip_id === payload.payload.trip_id) {
-          console.log('tamer ✅ Trip IDs match, updating...');
+          console.log('tamer tamer ✅ Trip IDs match, updating...');
           activeTripStorage.updateTrip({
             ...trip,
             status: payload.payload.new_status
           });
-          console.log('tamer 🔄 Trip status updated to:', payload.payload.new_status);
+          console.log('tamer tamer 🔄 Trip status updated to:', payload.payload.new_status);
         }
       })
       .on('broadcast', { event: 'trip_completed' }, (payload: any) => {
-        console.log('tamer 🏁 ===== RECEIVED trip_completed =====');
-        console.log('tamer 🏁 Full payload:', JSON.stringify(payload, null, 2));
+        console.log('tamer tamer 🏁 ===== RECEIVED trip_completed =====');
+        console.log('tamer tamer 🏁 Full payload:', JSON.stringify(payload, null, 2));
 
         const trip = activeTripStorage.getTrip();
 
         // Check if this completion event is for our current trip
         if (trip && trip.trip_id === payload.payload.trip_id) {
-          console.log('tamer ✅ Trip completion confirmed via broadcast');
+          console.log('tamer tamer ✅ Trip completion confirmed via broadcast');
 
           // Hide active trip view
           setShowActiveTripView(false);
@@ -424,10 +424,10 @@ export default function HomePage() {
       })
       .on('broadcast', { event: 'location_update' }, (payload: any) => {
         // تحديث الموقع على الخريطة (سيتم تنفيذه لاحقاً)
-        console.log('tamer 📍 Location update:', payload);
+        console.log('tamer tamer 📍 Location update:', payload);
       })
       .on('broadcast', { event: 'billing_update' }, (payload: any) => {
-        console.log('tamer 💰 Billing update:', payload);
+        console.log('tamer tamer 💰 Billing update:', payload);
 
         const trip = activeTripStorage.getTrip();
         if (trip && trip.trip_id === payload.payload.trip_id) {
@@ -446,12 +446,12 @@ export default function HomePage() {
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'active_trips' },
         (payload: any) => {
-          console.log('tamer 🔄 ===== POSTGRES UPDATE on active_trips =====');
-          console.log('tamer 🔄 Payload:', JSON.stringify(payload, null, 2));
+          console.log('tamer tamer 🔄 ===== POSTGRES UPDATE on active_trips =====');
+          console.log('tamer tamer 🔄 Payload:', JSON.stringify(payload, null, 2));
 
           const trip = activeTripStorage.getTrip();
           if (trip && trip.order_id === payload.new.order_id) {
-            console.log('tamer ✅ Update is for our trip!');
+            console.log('tamer tamer ✅ Update is for our trip!');
 
             // Update trip data from database
             activeTripStorage.updateTrip({
@@ -464,7 +464,7 @@ export default function HomePage() {
               total_cost: parseFloat(payload.new.total_cost || '0')
             }, true); // skipSync = true since it's coming from database
 
-            console.log('tamer 🔄 Trip updated from database:', payload.new.status);
+            console.log('tamer tamer 🔄 Trip updated from database:', payload.new.status);
 
             // Show toast for status changes
             if (payload.old.status !== payload.new.status) {
@@ -484,23 +484,23 @@ export default function HomePage() {
         }
       )
       .subscribe((status) => {
-        console.log('tamer 🔌 ===== SUBSCRIPTION STATUS =====');
-        console.log('tamer 🔌 Status:', status);
-        console.log('tamer 🔌 Timestamp:', new Date().toISOString());
+        console.log('tamer tamer 🔌 ===== SUBSCRIPTION STATUS =====');
+        console.log('tamer tamer 🔌 Status:', status);
+        console.log('tamer tamer 🔌 Timestamp:', new Date().toISOString());
 
         if (status === 'SUBSCRIBED') {
-          console.log('tamer ✅ ===== SUCCESSFULLY SUBSCRIBED TO active_trips =====');
+          console.log('tamer tamer ✅ ===== SUCCESSFULLY SUBSCRIBED TO active_trips =====');
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ ===== CHANNEL SUBSCRIPTION ERROR =====');
         } else if (status === 'TIMED_OUT') {
           console.error('⏱️ ===== CHANNEL SUBSCRIPTION TIMED OUT =====');
         } else {
-          console.log('tamer 📊 Other status:', status);
+          console.log('tamer tamer 📊 Other status:', status);
         }
       });
 
     return () => {
-      console.log('tamer 🔌 Unsubscribing from active_trips channel');
+      console.log('tamer tamer 🔌 Unsubscribing from active_trips channel');
       supabase.removeChannel(channel);
     };
   }, []);
@@ -518,7 +518,7 @@ export default function HomePage() {
         .single();
 
       if (data && (data.status === 'cap_accept' || data.status === 'accepted') && data.cap_id) {
-        console.log('tamer 🔄 Polling detected accepted order:', data);
+        console.log('tamer tamer 🔄 Polling detected accepted order:', data);
 
         // منع التحديث المتكرر إذا كانت الحالة محدثة بالفعل
         if (activeOrder.status !== 'accepted') {
@@ -632,7 +632,7 @@ export default function HomePage() {
           isOpen={true}
           onClose={() => {
             setShowActiveTripView(false);
-            console.log('tamer 🔙 Closed active trip view');
+            console.log('tamer tamer 🔙 Closed active trip view');
           }}
         />
       )}
