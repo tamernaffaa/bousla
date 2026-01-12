@@ -64,14 +64,17 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
         const trip = activeTripStorage.getTrip();
         setTripData(trip);
 
-        // Poll for updates every second
+        // Poll for updates every second - BUT STOP when invoice is shown
         const interval = setInterval(() => {
+            // Don't update if invoice is showing (to prevent clearing tripData)
+            if (showInvoice) return;
+
             const updatedTrip = activeTripStorage.getTrip();
             setTripData(updatedTrip);
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isOpen]);
+    }, [isOpen, showInvoice]);
 
     // Listen for dynamic updates from Kotlin
     useEffect(() => {
@@ -175,11 +178,21 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
     }
 
     const handleCloseInvoice = () => {
-        // Clear trip data when invoice is closed
+        console.log('📋 Closing invoice and cleaning up...');
+
+        // Clear trip data from localStorage
         activeTripStorage.clearTrip();
+
+        // Hide invoice
         setShowInvoice(false);
-        // Don't close the main modal - let it close naturally when tripData becomes null
-        // The useEffect will handle closing when there's no trip data
+
+        // Clear tripData to close the modal
+        setTripData(null);
+
+        // Close the main modal
+        onClose();
+
+        console.log('✅ Invoice closed and trip data cleared');
     };
 
     if (!tripData) return null;
