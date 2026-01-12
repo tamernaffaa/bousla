@@ -362,7 +362,14 @@ class ActiveTripStorage {
         this.updateTrip(updates);
         console.log(`💾 Status updated locally to: ${newStatus}`);
 
-        // Update database directly
+        // IMPORTANT: For 'completed' status, DON'T update database here
+        // Let Flutter handle the database operations (update orders, delete active_trips)
+        if (newStatus === 'completed') {
+            console.log('⏭️ Skipping database update for completed status - Flutter will handle it');
+            return true;
+        }
+
+        // Update database directly for other statuses
         try {
             const dbUpdates: any = {
                 status: newStatus,
@@ -372,7 +379,6 @@ class ActiveTripStorage {
             // Add timestamp fields
             if (newStatus === 'waiting') dbUpdates.arrived_at = now;
             if (newStatus === 'in_progress') dbUpdates.started_at = now;
-            if (newStatus === 'completed') dbUpdates.completed_at = now;
 
             const { error } = await supabase
                 .from('active_trips')
