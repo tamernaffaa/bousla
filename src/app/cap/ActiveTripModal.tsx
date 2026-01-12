@@ -55,6 +55,7 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
     const [tripData, setTripData] = useState<ActiveTripData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [showInvoice, setShowInvoice] = useState(false);
+    const [invoiceData, setInvoiceData] = useState<any>(null); // Saved invoice data
     const [isExpanded, setIsExpanded] = useState(true);
 
     // Load trip data from storage
@@ -162,19 +163,35 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
     async function handleCompleteTrip(customerRating?: number) {
         if (!tripData) return;
 
-        // CRITICAL: Save trip data NOW before it gets cleared
-        const savedTripData = { ...tripData };
-        console.log('💾 Saved trip data for invoice:', savedTripData.trip_id);
+        // CRITICAL: Save invoice data NOW before localStorage gets cleared
+        const savedInvoiceData = {
+            trip_id: tripData.trip_id,
+            order_id: tripData.order_id,
+            total_cost: tripData.total_cost,
+            on_way_distance_km: tripData.on_way_distance_km,
+            on_way_duration_min: tripData.on_way_duration_min,
+            waiting_duration_min: tripData.waiting_duration_min,
+            trip_distance_km: tripData.trip_distance_km,
+            trip_duration_min: tripData.trip_duration_min,
+            base_cost: tripData.base_cost,
+            km_price: tripData.km_price,
+            min_price: tripData.min_price,
+            accepted_at: tripData.accepted_at,
+            arrived_at: tripData.arrived_at,
+            started_at: tripData.started_at,
+            completed_at: new Date().toISOString()
+        };
+
+        console.log('💾 Saved invoice data:', savedInvoiceData);
+        setInvoiceData(savedInvoiceData);
 
         setIsLoading(true);
         try {
             await finishTrip({
-                tripData: savedTripData,
+                tripData,
                 customerRating,
                 onSuccess: () => {
                     console.log('✅ Trip completion initiated, showing invoice...');
-                    // Update tripData with saved data to ensure invoice has data
-                    setTripData(savedTripData);
                     setShowInvoice(true);
                     setIsLoading(false);
                 },
@@ -194,6 +211,9 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
 
         // Hide invoice
         setShowInvoice(false);
+
+        // Clear invoice data
+        setInvoiceData(null);
 
         // Clear tripData to close the modal
         setTripData(null);
@@ -458,17 +478,12 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
                 )}
             </AnimatePresence>
 
-            {/* Trip Invoice Modal */}
-            {
-                tripData && (
-                    <TripInvoiceModal
-                        isOpen={showInvoice}
-                        tripData={tripData}
-                        onCancel={handleCloseInvoice}
-                        readOnly={true}
-                    />
-                )
-            }
+            {/* Independent Trip Invoice Modal */}
+            <TripInvoiceModal
+                isOpen={showInvoice}
+                invoiceData={invoiceData}
+                onClose={handleCloseInvoice}
+            />
         </>
     );
 }
