@@ -11,6 +11,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaMapMarkerAlt, FaClock, FaRoad, FaDollarSign, FaUser, FaPhone, FaExchangeAlt } from 'react-icons/fa';
 import { activeTripStorage, ActiveTripData, TripStatus } from '../../lib/activeTripStorage';
+import { localOrderStorage } from '../../lib/localOrderStorage';
 import { supabase } from '../../lib/supabaseClient';
 import { toast } from 'react-toastify';
 import TripInvoiceModal from './TripInvoiceModal';
@@ -192,6 +193,10 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
                 customerRating,
                 onSuccess: () => {
                     console.log('✅ Trip completion initiated, showing invoice at page level...');
+
+                    // Clear active order from localStorage
+                    localOrderStorage.clearActiveOrder();
+                    console.log('🗑️ Active order cleared from localStorage');
 
                     // Call global function to show invoice at page level
                     if ((window as any).showTripInvoice) {

@@ -105,7 +105,16 @@ class LocalOrderStorage {
         const activeOrderId = localStorage.getItem(this.ACTIVE_ORDER_KEY);
         if (!activeOrderId) return null;
 
-        return this.getOrder(parseInt(activeOrderId));
+        const order = this.getOrder(parseInt(activeOrderId));
+
+        // التحقق من أن الطلب ليس مكتملاً أو ملغياً
+        if (order && (order.status === 'completed' || order.status === 'cancelled')) {
+            console.log(`⚠️ Order ${order.id} is ${order.status}, clearing from active storage`);
+            this.clearActiveOrder();
+            return null;
+        }
+
+        return order;
     }
 
     /**
