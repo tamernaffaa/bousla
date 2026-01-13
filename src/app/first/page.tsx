@@ -12,7 +12,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { toast } from 'react-toastify';
 import { activeTripStorage } from '../../lib/activeTripStorage';
 import ActiveTripView from './ActiveTripView';
-import CustomerInvoiceModal from './CustomerInvoiceModal';
+import CustomerTripInvoiceModal from '../cus/TripInvoiceModal';
 
 interface Trip {
   id: number;
@@ -407,32 +407,19 @@ export default function HomePage() {
         console.log('tamer tamer 🏁 Full payload:', JSON.stringify(payload, null, 2));
 
         const trip = activeTripStorage.getTrip();
-        console.log('tamer tamer 🔍 Current trip:', trip);
 
         // Check if this completion event is for our current trip
         if (trip && trip.trip_id === payload.payload.trip_id) {
           console.log('tamer tamer ✅ Trip completion confirmed via broadcast');
-          console.log('tamer tamer 🔍 Trip IDs match:', trip.trip_id, '===', payload.payload.trip_id);
 
           // Hide active trip view
-          console.log('tamer tamer 👁️ Hiding ActiveTripView...');
           setShowActiveTripView(false);
 
-          // Use data directly from broadcast (sent by captain)
-          console.log('tamer tamer 📋 Setting invoice data:', payload.payload);
-          console.log('tamer tamer 📋 Invoice data keys:', Object.keys(payload.payload));
+          // Show invoice modal
           setInvoiceData(payload.payload);
-
-          console.log('tamer tamer 🎯 Setting showInvoice to TRUE');
           setShowInvoice(true);
 
-          console.log('tamer tamer ✅ Invoice modal should now be visible!');
-
           playNotificationSound('تم الوصول! 🎉', 'الرحلة انتهت، يرجى دفع المبلغ المستحق.');
-        } else {
-          console.log('tamer tamer ⚠️ Trip IDs do NOT match or no trip found');
-          console.log('tamer tamer 🔍 Expected trip_id:', trip?.trip_id);
-          console.log('tamer tamer 🔍 Received trip_id:', payload.payload.trip_id);
         }
       })
       .on('broadcast', { event: 'location_update' }, (payload: any) => {
@@ -495,26 +482,22 @@ export default function HomePage() {
             }
           }
         }
-      );
+      )
+      .subscribe((status) => {
+        console.log('tamer tamer 🔌 ===== SUBSCRIPTION STATUS =====');
+        console.log('tamer tamer 🔌 Status:', status);
+        console.log('tamer tamer 🔌 Timestamp:', new Date().toISOString());
 
-    console.log('tamer tamer 🔌 All broadcast handlers registered. Subscribing to active_trips channel...');
-    console.log('tamer tamer 🔌 Handlers: trip_created, status_changed, trip_completed, location_update, billing_update, postgres_changes');
-
-    channel.subscribe((status) => {
-      console.log('tamer tamer 🔌 ===== SUBSCRIPTION STATUS =====');
-      console.log('tamer tamer 🔌 Status:', status);
-      console.log('tamer tamer 🔌 Timestamp:', new Date().toISOString());
-
-      if (status === 'SUBSCRIBED') {
-        console.log('tamer tamer ✅ ===== SUCCESSFULLY SUBSCRIBED TO active_trips =====');
-      } else if (status === 'CHANNEL_ERROR') {
-        console.error('❌ ===== CHANNEL SUBSCRIPTION ERROR =====');
-      } else if (status === 'TIMED_OUT') {
-        console.error('⏱️ ===== CHANNEL SUBSCRIPTION TIMED OUT =====');
-      } else {
-        console.log('tamer tamer 📊 Other status:', status);
-      }
-    });
+        if (status === 'SUBSCRIBED') {
+          console.log('tamer tamer ✅ ===== SUCCESSFULLY SUBSCRIBED TO active_trips =====');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ ===== CHANNEL SUBSCRIPTION ERROR =====');
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏱️ ===== CHANNEL SUBSCRIPTION TIMED OUT =====');
+        } else {
+          console.log('tamer tamer 📊 Other status:', status);
+        }
+      });
 
     return () => {
       console.log('tamer tamer 🔌 Unsubscribing from active_trips channel');
@@ -936,25 +919,14 @@ export default function HomePage() {
         </div>
       )}
       {/* Invoice Modal */}
-      <CustomerInvoiceModal
+      <CustomerTripInvoiceModal
         isOpen={showInvoice}
-        invoiceData={invoiceData}
-        onClose={() => {
-          console.log('📋 Closing customer invoice');
-
-          // Clear trip data
-          activeTripStorage.clearTrip();
-          localStorage.removeItem('active_order');
-          setActiveOrder(null);
-
-          // Close modal
+        tripData={invoiceData}
+        onComplete={handleFinalizeTrip}
+        onCancel={() => {
+          // Optional: prevent closing without rating/paying?
+          // For now allow closing to look at map/history
           setShowInvoice(false);
-          setInvoiceData(null);
-
-          toast.success('شكراً لك! رحلة سعيدة 🌟');
-
-          // Refresh trips history
-          fetchTrips();
         }}
       />
     </>
