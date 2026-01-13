@@ -29,6 +29,9 @@ interface TripInvoiceModalProps {
 export default function CustomerTripInvoiceModal({ isOpen, invoiceData, onClose }: TripInvoiceModalProps) {
     // Prevent body scroll when modal is open
     useEffect(() => {
+        console.log('tamer tamer 🎨 CustomerInvoiceModal - isOpen changed:', isOpen);
+        console.log('tamer tamer 🎨 CustomerInvoiceModal - invoiceData:', invoiceData);
+
         if (isOpen) {
             document.body.style.overflow = 'hidden';
         } else {
@@ -37,9 +40,16 @@ export default function CustomerTripInvoiceModal({ isOpen, invoiceData, onClose 
         return () => {
             document.body.style.overflow = 'unset';
         };
-    }, [isOpen]);
+    }, [isOpen, invoiceData]);
 
-    if (!isOpen || !invoiceData) return null;
+    console.log('tamer tamer 🎨 CustomerInvoiceModal RENDER - isOpen:', isOpen, 'invoiceData:', !!invoiceData);
+
+    if (!isOpen || !invoiceData) {
+        console.log('tamer tamer 🎨 CustomerInvoiceModal - NOT RENDERING (isOpen:', isOpen, ', invoiceData:', !!invoiceData, ')');
+        return null;
+    }
+
+    console.log('tamer tamer 🎨 CustomerInvoiceModal - RENDERING MODAL!');
 
     const formatTime = (isoString: string) => {
         const date = new Date(isoString);

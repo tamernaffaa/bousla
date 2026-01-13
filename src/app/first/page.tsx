@@ -407,20 +407,32 @@ export default function HomePage() {
         console.log('tamer tamer 🏁 Full payload:', JSON.stringify(payload, null, 2));
 
         const trip = activeTripStorage.getTrip();
+        console.log('tamer tamer 🔍 Current trip:', trip);
 
         // Check if this completion event is for our current trip
         if (trip && trip.trip_id === payload.payload.trip_id) {
           console.log('tamer tamer ✅ Trip completion confirmed via broadcast');
+          console.log('tamer tamer 🔍 Trip IDs match:', trip.trip_id, '===', payload.payload.trip_id);
 
           // Hide active trip view
+          console.log('tamer tamer 👁️ Hiding ActiveTripView...');
           setShowActiveTripView(false);
 
           // Use data directly from broadcast (sent by captain)
           console.log('tamer tamer 📋 Setting invoice data:', payload.payload);
+          console.log('tamer tamer 📋 Invoice data keys:', Object.keys(payload.payload));
           setInvoiceData(payload.payload);
+
+          console.log('tamer tamer 🎯 Setting showInvoice to TRUE');
           setShowInvoice(true);
 
+          console.log('tamer tamer ✅ Invoice modal should now be visible!');
+
           playNotificationSound('تم الوصول! 🎉', 'الرحلة انتهت، يرجى دفع المبلغ المستحق.');
+        } else {
+          console.log('tamer tamer ⚠️ Trip IDs do NOT match or no trip found');
+          console.log('tamer tamer 🔍 Expected trip_id:', trip?.trip_id);
+          console.log('tamer tamer 🔍 Received trip_id:', payload.payload.trip_id);
         }
       })
       .on('broadcast', { event: 'location_update' }, (payload: any) => {
