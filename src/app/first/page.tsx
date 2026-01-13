@@ -495,22 +495,26 @@ export default function HomePage() {
             }
           }
         }
-      )
-      .subscribe((status) => {
-        console.log('tamer tamer 🔌 ===== SUBSCRIPTION STATUS =====');
-        console.log('tamer tamer 🔌 Status:', status);
-        console.log('tamer tamer 🔌 Timestamp:', new Date().toISOString());
+      );
 
-        if (status === 'SUBSCRIBED') {
-          console.log('tamer tamer ✅ ===== SUCCESSFULLY SUBSCRIBED TO active_trips =====');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ ===== CHANNEL SUBSCRIPTION ERROR =====');
-        } else if (status === 'TIMED_OUT') {
-          console.error('⏱️ ===== CHANNEL SUBSCRIPTION TIMED OUT =====');
-        } else {
-          console.log('tamer tamer 📊 Other status:', status);
-        }
-      });
+    console.log('tamer tamer 🔌 All broadcast handlers registered. Subscribing to active_trips channel...');
+    console.log('tamer tamer 🔌 Handlers: trip_created, status_changed, trip_completed, location_update, billing_update, postgres_changes');
+
+    channel.subscribe((status) => {
+      console.log('tamer tamer 🔌 ===== SUBSCRIPTION STATUS =====');
+      console.log('tamer tamer 🔌 Status:', status);
+      console.log('tamer tamer 🔌 Timestamp:', new Date().toISOString());
+
+      if (status === 'SUBSCRIBED') {
+        console.log('tamer tamer ✅ ===== SUCCESSFULLY SUBSCRIBED TO active_trips =====');
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ ===== CHANNEL SUBSCRIPTION ERROR =====');
+      } else if (status === 'TIMED_OUT') {
+        console.error('⏱️ ===== CHANNEL SUBSCRIPTION TIMED OUT =====');
+      } else {
+        console.log('tamer tamer 📊 Other status:', status);
+      }
+    });
 
     return () => {
       console.log('tamer tamer 🔌 Unsubscribing from active_trips channel');
