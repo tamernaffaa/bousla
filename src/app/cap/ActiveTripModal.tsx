@@ -191,8 +191,13 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
                 tripData,
                 customerRating,
                 onSuccess: () => {
-                    console.log('✅ Trip completion initiated, showing invoice...');
-                    setShowInvoice(true);
+                    console.log('✅ Trip completion initiated, showing invoice at page level...');
+
+                    // Call global function to show invoice at page level
+                    if ((window as any).showTripInvoice) {
+                        (window as any).showTripInvoice(savedInvoiceData);
+                    }
+
                     setIsLoading(false);
                 },
                 onError: () => setIsLoading(false)
@@ -477,13 +482,6 @@ export default function ActiveTripModal({ isOpen, onClose, orderId }: ActiveTrip
                     </>
                 )}
             </AnimatePresence>
-
-            {/* Independent Trip Invoice Modal */}
-            <TripInvoiceModal
-                isOpen={showInvoice}
-                invoiceData={invoiceData}
-                onClose={handleCloseInvoice}
-            />
         </>
     );
 }

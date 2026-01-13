@@ -18,6 +18,7 @@ import { ProfileMenu as DynamicProfileMenu } from './menu/ProfileMenu';
 import { BetterLuckMessage } from './BetterLuckMessage';
 import { OrderDetailsModal } from './OrderDetailsModal';
 import ActiveTripModal from './ActiveTripModal';
+import TripInvoiceModal from './TripInvoiceModal';
 import { RejectedOrdersModal } from './RejectedOrdersModal';
 import { checkAndApplyRewards } from './lib/rewardHandler';
 import { localOrderStorage } from '../../lib/localOrderStorage';
@@ -110,6 +111,10 @@ export default function CaptainApp() {
   const [captainId, setCaptainId] = useState<number>(0);
   const [menusLoaded, setMenusLoaded] = useState(false);
   const [showActiveTripModal, setShowActiveTripModal] = useState(false);
+
+  // Invoice Modal State (Independent from ActiveTripModal)
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [invoiceData, setInvoiceData] = useState<any>(null);
 
   // Swipe Logic for Opening Menu (Swipe Left from Right Edge - Arabic Layout)
   const [pageTouchStart, setPageTouchStart] = useState<number | null>(null);
@@ -328,8 +333,17 @@ export default function CaptainApp() {
   // Make sendToKotlin available globally for child components
   useEffect(() => {
     (window as any).sendToKotlin = sendToKotlin;
+
+    // Make showInvoice function available globally for ActiveTripModal
+    (window as any).showTripInvoice = (data: any) => {
+      console.log('📋 Showing trip invoice at page level:', data);
+      setInvoiceData(data);
+      setShowInvoiceModal(true);
+    };
+
     return () => {
       delete (window as any).sendToKotlin;
+      delete (window as any).showTripInvoice;
     };
   }, []);
 
@@ -2141,6 +2155,17 @@ export default function CaptainApp() {
         draggable
         pauseOnHover
         theme="light"
+      />
+
+      {/* Independent Trip Invoice Modal */}
+      <TripInvoiceModal
+        isOpen={showInvoiceModal}
+        invoiceData={invoiceData}
+        onClose={() => {
+          console.log('📋 Closing invoice modal');
+          setShowInvoiceModal(false);
+          setInvoiceData(null);
+        }}
       />
 
     </div>
