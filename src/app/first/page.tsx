@@ -634,6 +634,14 @@ export default function HomePage() {
             setShowActiveTripView(false);
             console.log('tamer tamer 🔙 Closed active trip view');
           }}
+          onTripCompleted={(data) => {
+            console.log('tamer tamer 📋 Trip completed, showing invoice:', data);
+            // Hide active trip view
+            setShowActiveTripView(false);
+            // Show invoice
+            setInvoiceData(data);
+            setShowInvoice(true);
+          }}
         />
       )}
 

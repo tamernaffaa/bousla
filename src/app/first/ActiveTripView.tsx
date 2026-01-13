@@ -18,6 +18,7 @@ import Image from 'next/image';
 interface ActiveTripViewProps {
     isOpen: boolean;
     onClose: () => void;
+    onTripCompleted?: (invoiceData: any) => void;
     mode?: 'modal' | 'embedded';
 }
 
@@ -37,7 +38,7 @@ const STATUS_ICONS = {
     cancelled: '❌'
 };
 
-export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: ActiveTripViewProps) {
+export default function ActiveTripView({ isOpen, onClose, onTripCompleted, mode = 'modal' }: ActiveTripViewProps) {
     const [tripData, setTripData] = useState<ActiveTripData | null>(null);
     const [estimatedArrival, setEstimatedArrival] = useState<number>(0);
     const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
@@ -104,12 +105,19 @@ export default function ActiveTripView({ isOpen, onClose, mode = 'modal' }: Acti
             .on('broadcast', { event: 'trip_completed' }, (payload) => {
                 console.log('tamer ✅ Trip completed:', payload.payload);
                 const data = payload.payload;
-                toast.success('اكتملت الرحلة!');
-                // Show rating modal or completion screen
-                setTimeout(() => {
-                    activeTripStorage.clearTrip();
-                    onClose();
-                }, 3000);
+
+                toast.success('اكتملت الرحلة! 🎉');
+
+                // Trigger invoice display in parent component
+                if (onTripCompleted) {
+                    onTripCompleted(data);
+                } else {
+                    // Fallback: close after delay if no callback provided
+                    setTimeout(() => {
+                        activeTripStorage.clearTrip();
+                        onClose();
+                    }, 3000);
+                }
             })
             .on('broadcast', { event: 'trip_cancelled' }, (payload) => {
                 console.log('tamer ❌ Trip cancelled:', payload.payload);
