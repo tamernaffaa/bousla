@@ -12,7 +12,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { toast } from 'react-toastify';
 import { activeTripStorage } from '../../lib/activeTripStorage';
 import ActiveTripView from './ActiveTripView';
-import CustomerTripInvoiceModal from '../cus/TripInvoiceModal';
+import CustomerInvoiceModal from './CustomerInvoiceModal';
 
 interface Trip {
   id: number;
@@ -415,8 +415,27 @@ export default function HomePage() {
           // Hide active trip view
           setShowActiveTripView(false);
 
+          // Prepare invoice data matching captain's format
+          const invoicePayload = {
+            trip_id: payload.payload.trip_id,
+            order_id: payload.payload.order_id,
+            total_cost: payload.payload.total_cost,
+            on_way_distance_km: trip.on_way_distance_km || 0,
+            on_way_duration_min: trip.on_way_duration_min || 0,
+            waiting_duration_min: trip.waiting_duration_min || 0,
+            trip_distance_km: trip.trip_distance_km || 0,
+            trip_duration_min: trip.trip_duration_min || 0,
+            base_cost: trip.base_cost || 0,
+            km_price: trip.km_price || 0,
+            min_price: trip.min_price || 0,
+            accepted_at: trip.accepted_at,
+            arrived_at: trip.arrived_at,
+            started_at: trip.started_at,
+            completed_at: payload.payload.completed_at || new Date().toISOString()
+          };
+
           // Show invoice modal
-          setInvoiceData(payload.payload);
+          setInvoiceData(invoicePayload);
           setShowInvoice(true);
 
           playNotificationSound('تم الوصول! 🎉', 'الرحلة انتهت، يرجى دفع المبلغ المستحق.');
@@ -919,14 +938,25 @@ export default function HomePage() {
         </div>
       )}
       {/* Invoice Modal */}
-      <CustomerTripInvoiceModal
+      <CustomerInvoiceModal
         isOpen={showInvoice}
-        tripData={invoiceData}
-        onComplete={handleFinalizeTrip}
-        onCancel={() => {
-          // Optional: prevent closing without rating/paying?
-          // For now allow closing to look at map/history
+        invoiceData={invoiceData}
+        onClose={() => {
+          console.log('📋 Closing customer invoice');
+
+          // Clear trip data
+          activeTripStorage.clearTrip();
+          localStorage.removeItem('active_order');
+          setActiveOrder(null);
+
+          // Close modal
           setShowInvoice(false);
+          setInvoiceData(null);
+
+          toast.success('شكراً لك! رحلة سعيدة 🌟');
+
+          // Refresh trips history
+          fetchTrips();
         }}
       />
     </>
