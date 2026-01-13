@@ -293,7 +293,10 @@ export default function CaptainApp() {
         setShowActiveTripModal(true);
         console.log('tamer tamer 📱 Active trip found for captain, showing modal');
       } else {
-        setShowActiveTripModal(false);
+        // IMPORTANT: Don't close modal if invoice is being shown
+        if (!showInvoiceModal) {
+          setShowActiveTripModal(false);
+        }
       }
     };
 
@@ -303,7 +306,7 @@ export default function CaptainApp() {
     // Check every 2 seconds
     const interval = setInterval(checkActiveTrip, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [showInvoiceModal]); // Add showInvoiceModal as dependency
 
   const sendToKotlin = (action: string, message: string) => {
     try {
