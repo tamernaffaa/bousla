@@ -1,20 +1,21 @@
 /**
  * Trip Invoice Modal - Customer Interface
  * 
- * Displays trip invoice with details and captain rating
+ * Displays trip invoice with complete details and captain rating
  */
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaCheckCircle, FaMapMarkerAlt, FaRoad, FaClock, FaDollarSign } from 'react-icons/fa';
 import StarRating from '../../components/StarRating';
 import { toast } from 'react-toastify';
+import { activeTripStorage } from '../../lib/activeTripStorage';
 
 interface TripInvoiceModalProps {
     isOpen: boolean;
-    tripData: any; // Using any for now to be flexible with payload from Supabase
+    tripData: any;
     onComplete: (captainRating: number) => void;
     onCancel: () => void;
 }
@@ -22,6 +23,25 @@ interface TripInvoiceModalProps {
 export default function CustomerTripInvoiceModal({ isOpen, tripData, onComplete, onCancel }: TripInvoiceModalProps) {
     const [captainRating, setCaptainRating] = useState(5);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [fullTripData, setFullTripData] = useState<any>(null);
+
+    // Load complete trip data from activeTripStorage
+    useEffect(() => {
+        if (isOpen && tripData) {
+            const storedTrip = activeTripStorage.getTrip();
+            if (storedTrip) {
+                // Merge broadcast data with stored data
+                setFullTripData({
+                    ...storedTrip,
+                    ...tripData
+                });
+                console.log('📋 Full trip data for invoice:', storedTrip);
+            } else {
+                // Fallback to broadcast data only
+                setFullTripData(tripData);
+            }
+        }
+    }, [isOpen, tripData]);
 
     const handleComplete = async () => {
         if (captainRating === 0) {
@@ -39,7 +59,18 @@ export default function CustomerTripInvoiceModal({ isOpen, tripData, onComplete,
         }
     };
 
-    if (!tripData) return null;
+    if (!fullTripData) return null;
+
+    const formatTime = (isoString?: string) => {
+        if (!isoString) return '--:--';
+        const date = new Date(isoString);
+        return date.toLocaleTimeString('ar-SY', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const formatDuration = (minutes: number) => {
+        if (minutes < 1) return `${Math.round(minutes * 60)} ثانية`;
+        return `${Math.round(minutes)} دقيقة`;
+    };
 
     return (
         <AnimatePresence>
@@ -50,8 +81,7 @@ export default function CustomerTripInvoiceModal({ isOpen, tripData, onComplete,
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/50 z-50"
-                        onClick={onCancel}
+                        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9999]"
                     />
 
                     {/* Modal */}
@@ -59,50 +89,105 @@ export default function CustomerTripInvoiceModal({ isOpen, tripData, onComplete,
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-lg mx-auto bg-white rounded-2xl shadow-2xl z-50 max-h-[90vh] overflow-y-auto"
+                        className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-lg mx-auto bg-white rounded-2xl shadow-2xl z-[9999] max-h-[90vh] overflow-y-auto"
                     >
                         {/* Header */}
-                        <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-t-2xl text-white relative">
-                            <button
-                                onClick={onCancel}
-                                className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
-                            >
-                                <FaTimes size={24} />
-                            </button>
-
+                        <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-2xl text-white relative">
                             <div className="text-center">
                                 <FaCheckCircle className="mx-auto mb-3" size={48} />
-                                <h2 className="text-2xl font-bold">وصلت بالسلامة!</h2>
-                                <p className="text-blue-100 mt-1">فاتورة الرحلة</p>
+                                <h2 className="text-2xl font-bold">وصلت بالسلامة! 🎉</h2>
+                                <p className="text-green-100 mt-1">فاتورة الرحلة</p>
                             </div>
                         </div>
 
                         {/* Content */}
-                        <div className="p-6 space-y-6">
-                            {/* Cost Display - Main Focus */}
-                            <div className="text-center bg-gray-50 p-6 rounded-2xl border-2 border-blue-100">
-                                <p className="text-gray-500 mb-1">المبلغ المطلوب</p>
-                                <div className="text-4xl font-bold text-blue-600 mb-2">
-                                    {parseFloat(tripData.total_cost || '0').toFixed(0)} <span className="text-xl">ل.س</span>
-                                </div>
-                                <p className="text-sm text-gray-400">شاملاً كافة الرسوم والضرائب</p>
+                        <div className="p-6 space-y-4">
+                            {/* Total Cost - Highlighted */}
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4 text-center">
+                                <p className="text-gray-600 text-sm mb-1">المبلغ الإجمالي</p>
+                                <p className="text-4xl font-bold text-green-600">
+                                    {(fullTripData.total_cost || 0).toLocaleString('ar-SY')} ل.س
+                                </p>
                             </div>
 
-                            {/* Trip Metrics */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-gray-50 p-4 rounded-xl text-center">
-                                    <FaRoad className="mx-auto text-blue-600 mb-2" size={20} />
-                                    <p className="font-bold text-gray-800">
-                                        {tripData.distance_km || '0'} كم
-                                    </p>
-                                    <p className="text-xs text-gray-500">المسافة</p>
+                            {/* Time Details */}
+                            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                                <h3 className="font-semibold text-gray-700 mb-3">⏱️ تفاصيل الوقت</h3>
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                        <p className="text-gray-500">قبول الطلب</p>
+                                        <p className="font-semibold">{formatTime(fullTripData.accepted_at)}</p>
+                                    </div>
+                                    {fullTripData.arrived_at && (
+                                        <div>
+                                            <p className="text-gray-500">الوصول</p>
+                                            <p className="font-semibold">{formatTime(fullTripData.arrived_at)}</p>
+                                        </div>
+                                    )}
+                                    {fullTripData.started_at && (
+                                        <div>
+                                            <p className="text-gray-500">بدء الرحلة</p>
+                                            <p className="font-semibold">{formatTime(fullTripData.started_at)}</p>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <p className="text-gray-500">إنهاء الرحلة</p>
+                                        <p className="font-semibold">{formatTime(fullTripData.completed_at)}</p>
+                                    </div>
                                 </div>
-                                <div className="bg-gray-50 p-4 rounded-xl text-center">
-                                    <FaClock className="mx-auto text-purple-600 mb-2" size={20} />
-                                    <p className="font-bold text-gray-800">
-                                        {tripData.duration_min || '0'} دقيقة
-                                    </p>
-                                    <p className="text-xs text-gray-500">الوقت</p>
+                            </div>
+
+                            {/* Distance & Duration */}
+                            <div className="bg-blue-50 rounded-xl p-4 space-y-3">
+                                <h3 className="font-semibold text-gray-700 mb-3">📍 المسافة والمدة</h3>
+
+                                {/* On Way */}
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-gray-600">مسافة الذهاب للزبون</span>
+                                    <span className="font-semibold">{(fullTripData.on_way_distance_km || 0).toFixed(2)} كم</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-gray-600">مدة الذهاب</span>
+                                    <span className="font-semibold">{formatDuration(fullTripData.on_way_duration_min || 0)}</span>
+                                </div>
+
+                                {/* Waiting */}
+                                {(fullTripData.waiting_duration_min || 0) > 0 && (
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-600">مدة الانتظار</span>
+                                        <span className="font-semibold">{formatDuration(fullTripData.waiting_duration_min)}</span>
+                                    </div>
+                                )}
+
+                                <div className="border-t border-blue-200 my-2"></div>
+
+                                {/* Trip */}
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-gray-600">مسافة الرحلة</span>
+                                    <span className="font-semibold text-blue-600">{(fullTripData.trip_distance_km || 0).toFixed(2)} كم</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-gray-600">مدة الرحلة</span>
+                                    <span className="font-semibold text-blue-600">{formatDuration(fullTripData.trip_duration_min || 0)}</span>
+                                </div>
+                            </div>
+
+                            {/* Cost Breakdown */}
+                            <div className="bg-amber-50 rounded-xl p-4 space-y-2">
+                                <h3 className="font-semibold text-gray-700 mb-3">💰 تفاصيل التكلفة</h3>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">السعر الأساسي</span>
+                                        <span className="font-semibold">{(fullTripData.base_cost || 0).toLocaleString('ar-SY')} ل.س</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs text-gray-500">
+                                        <span>سعر الكيلومتر</span>
+                                        <span>{(fullTripData.km_price || 0).toLocaleString('ar-SY')} ل.س/كم</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs text-gray-500">
+                                        <span>سعر الدقيقة</span>
+                                        <span>{(fullTripData.min_price || 0).toLocaleString('ar-SY')} ل.س/دقيقة</span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -126,13 +211,13 @@ export default function CustomerTripInvoiceModal({ isOpen, tripData, onComplete,
                                 </p>
                             </div>
 
-                            {/* Action Buttons */}
+                            {/* Action Button */}
                             <button
                                 onClick={handleComplete}
                                 disabled={isSubmitting || captainRating === 0}
-                                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 transition-all shadow-lg shadow-blue-200"
+                                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 transition-all shadow-lg hover:shadow-xl active:scale-95"
                             >
-                                {isSubmitting ? 'جاري التأكيد...' : 'تأكيد الدفع والتقييم'}
+                                {isSubmitting ? 'جاري التأكيد...' : '✓ تأكيد الدفع والتقييم'}
                             </button>
                         </div>
                     </motion.div>
