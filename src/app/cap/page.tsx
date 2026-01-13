@@ -1914,105 +1914,107 @@ export default function CaptainApp() {
         </button>
       </div>
 
-      {/* 🚀 BOTTOM PANEL (GO Button) */}
-      <div
-        className="absolute bottom-0 left-0 right-0 p-6 pb-8 bg-white rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-30 transition-all duration-500 ease-in-out"
-      >
-        {/* Handle Bar */}
+      {/* 🚀 BOTTOM PANEL (GO Button) - Hidden during active trip */}
+      {!showActiveTripModal && (
         <div
-          onClick={() => setIsSheetMinimized(!isSheetMinimized)}
-          className="w-full flex justify-center pb-4 cursor-pointer active:opacity-70"
-          role="button"
-          aria-label="Toggle Bottom Sheet"
+          className="absolute bottom-0 left-0 right-0 p-6 pb-8 bg-white rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-30 transition-all duration-500 ease-in-out"
         >
-          <div className="w-12 h-1.5 bg-gray-200 rounded-full"></div>
-        </div>
-
-        {/* Content Container - Morphs from Col to Row */}
-        <div className={`flex transition-all duration-500 ${isSheetMinimized ? 'flex-row-reverse items-center justify-between gap-4' : 'flex-col items-center'}`}>
-
-          {/* 1. Status Text */}
-          <div className={`transition-all duration-500 ${isSheetMinimized ? 'text-right mb-0' : 'text-center mb-6 w-full'}`}>
-            {active ? (
-              <h3 className={`font-bold text-gray-700 animate-pulse ${isSheetMinimized ? 'text-sm' : 'text-xl'}`}>جاري البحث...</h3>
-            ) : (
-              <h3 className={`font-bold text-gray-400 ${isSheetMinimized ? 'text-sm' : 'text-base'}`}>غير متصل</h3>
-            )}
+          {/* Handle Bar */}
+          <div
+            onClick={() => setIsSheetMinimized(!isSheetMinimized)}
+            className="w-full flex justify-center pb-4 cursor-pointer active:opacity-70"
+            role="button"
+            aria-label="Toggle Bottom Sheet"
+          >
+            <div className="w-12 h-1.5 bg-gray-200 rounded-full"></div>
           </div>
 
-          {/* 2. Main Button */}
-          <div className={`transition-all duration-500 ${isSheetMinimized ? 'w-auto' : 'w-full flex justify-center'}`}>
-            {active ? (
-              <button
-                onClick={handleActivate}
-                className={`bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${isSheetMinimized ? 'px-6 py-2 text-sm h-10' : 'w-full py-4 text-xl h-16'}`}
-              >
-                <FaPowerOff />
-                {!isSheetMinimized && <span>إيقاف العمل</span>}
-              </button>
-            ) : (
-              <button
-                onClick={handleActivate}
-                className={`bg-yellow-400 hover:bg-yellow-500 text-black font-black rounded-full shadow-xl transition-all active:scale-95 flex items-center justify-center ${isSheetMinimized ? 'w-12 h-12 text-sm' : 'w-24 h-24 text-2xl shadow-yellow-200 ring-4 ring-yellow-100'}`}
-              >
-                ابدأ
-              </button>
-            )}
-          </div>
+          {/* Content Container - Morphs from Col to Row */}
+          <div className={`flex transition-all duration-500 ${isSheetMinimized ? 'flex-row-reverse items-center justify-between gap-4' : 'flex-col items-center'}`}>
 
-          {/* Zone Controls */}
-          {!isSheetMinimized && (
-            <div className="w-full mt-4 p-3 bg-gray-50 rounded-xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-gray-600">نطاق البحث</span>
-                <span className="text-sm font-black text-yellow-600">{zoneRadius} كم</span>
-              </div>
-              <div className="flex items-center gap-2">
+            {/* 1. Status Text */}
+            <div className={`transition-all duration-500 ${isSheetMinimized ? 'text-right mb-0' : 'text-center mb-6 w-full'}`}>
+              {active ? (
+                <h3 className={`font-bold text-gray-700 animate-pulse ${isSheetMinimized ? 'text-sm' : 'text-xl'}`}>جاري البحث...</h3>
+              ) : (
+                <h3 className={`font-bold text-gray-400 ${isSheetMinimized ? 'text-sm' : 'text-base'}`}>غير متصل</h3>
+              )}
+            </div>
+
+            {/* 2. Main Button */}
+            <div className={`transition-all duration-500 ${isSheetMinimized ? 'w-auto' : 'w-full flex justify-center'}`}>
+              {active ? (
                 <button
-                  onClick={() => zoneRadius > 1 && updateZone(zoneRadius - 0.5)}
-                  disabled={zoneRadius <= 1}
-                  className="w-10 h-10 bg-white rounded-lg shadow flex items-center justify-center text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
+                  onClick={handleActivate}
+                  className={`bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${isSheetMinimized ? 'px-6 py-2 text-sm h-10' : 'w-full py-4 text-xl h-16'}`}
                 >
-                  <FaMinus />
+                  <FaPowerOff />
+                  {!isSheetMinimized && <span>إيقاف العمل</span>}
                 </button>
-                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-yellow-400 to-yellow-600 transition-all duration-300"
-                    style={{ width: `${(zoneRadius / 10) * 100}%` }}
-                  />
+              ) : (
+                <button
+                  onClick={handleActivate}
+                  className={`bg-yellow-400 hover:bg-yellow-500 text-black font-black rounded-full shadow-xl transition-all active:scale-95 flex items-center justify-center ${isSheetMinimized ? 'w-12 h-12 text-sm' : 'w-24 h-24 text-2xl shadow-yellow-200 ring-4 ring-yellow-100'}`}
+                >
+                  ابدأ
+                </button>
+              )}
+            </div>
+
+            {/* Zone Controls */}
+            {!isSheetMinimized && (
+              <div className="w-full mt-4 p-3 bg-gray-50 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-gray-600">نطاق البحث</span>
+                  <span className="text-sm font-black text-yellow-600">{zoneRadius} كم</span>
                 </div>
-                <button
-                  onClick={() => zoneRadius < 10 && updateZone(zoneRadius + 0.5)}
-                  disabled={zoneRadius >= 10}
-                  className="w-10 h-10 bg-white rounded-lg shadow flex items-center justify-center text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
-                >
-                  <FaPlus />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => zoneRadius > 1 && updateZone(zoneRadius - 0.5)}
+                    disabled={zoneRadius <= 1}
+                    className="w-10 h-10 bg-white rounded-lg shadow flex items-center justify-center text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
+                  >
+                    <FaMinus />
+                  </button>
+                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-yellow-400 to-yellow-600 transition-all duration-300"
+                      style={{ width: `${(zoneRadius / 10) * 100}%` }}
+                    />
+                  </div>
+                  <button
+                    onClick={() => zoneRadius < 10 && updateZone(zoneRadius + 0.5)}
+                    disabled={zoneRadius >= 10}
+                    className="w-10 h-10 bg-white rounded-lg shadow flex items-center justify-center text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
+                  >
+                    <FaPlus />
+                  </button>
+                </div>
+                <div className="flex justify-between text-[10px] text-gray-400 mt-1 px-1">
+                  <span>1 كم</span>
+                  <span>10 كم</span>
+                </div>
               </div>
-              <div className="flex justify-between text-[10px] text-gray-400 mt-1 px-1">
-                <span>1 كم</span>
-                <span>10 كم</span>
-              </div>
-            </div>
-          )}
+            )}
 
-          {/* 3. Stats Row (Condensed in Minimized) */}
-          <div className={`transition-all duration-500 border-gray-100 ${isSheetMinimized ? 'border-none flex gap-4' : 'border-t mt-8 pt-6 w-full flex justify-between'}`}>
-            <div className={`text-center ${isSheetMinimized ? '' : 'flex-1 border-l border-gray-100'}`}>
-              <div className={`text-gray-400 font-bold ${isSheetMinimized ? 'text-[10px]' : 'text-xs mb-1'}`}>القبول</div>
-              <div className={`font-bold text-green-600 ${isSheetMinimized ? 'text-sm' : 'text-lg'}`}>95%</div>
-            </div>
-            <div className={`text-center ${isSheetMinimized ? '' : 'flex-1 border-l border-gray-100'}`}>
-              <div className={`text-gray-400 font-bold ${isSheetMinimized ? 'text-[10px]' : 'text-xs mb-1'}`}>التقييم</div>
-              <div className={`font-bold text-black ${isSheetMinimized ? 'text-sm' : 'text-lg'}`}>4.9</div>
-            </div>
-            <div className={`text-center ${isSheetMinimized ? '' : 'flex-1'}`}>
-              <div className={`text-gray-400 font-bold ${isSheetMinimized ? 'text-[10px]' : 'text-xs mb-1'}`}>الرحلات</div>
-              <div className={`font-bold text-black ${isSheetMinimized ? 'text-sm' : 'text-lg'}`}>12</div>
+            {/* 3. Stats Row (Condensed in Minimized) */}
+            <div className={`transition-all duration-500 border-gray-100 ${isSheetMinimized ? 'border-none flex gap-4' : 'border-t mt-8 pt-6 w-full flex justify-between'}`}>
+              <div className={`text-center ${isSheetMinimized ? '' : 'flex-1 border-l border-gray-100'}`}>
+                <div className={`text-gray-400 font-bold ${isSheetMinimized ? 'text-[10px]' : 'text-xs mb-1'}`}>القبول</div>
+                <div className={`font-bold text-green-600 ${isSheetMinimized ? 'text-sm' : 'text-lg'}`}>95%</div>
+              </div>
+              <div className={`text-center ${isSheetMinimized ? '' : 'flex-1 border-l border-gray-100'}`}>
+                <div className={`text-gray-400 font-bold ${isSheetMinimized ? 'text-[10px]' : 'text-xs mb-1'}`}>التقييم</div>
+                <div className={`font-bold text-black ${isSheetMinimized ? 'text-sm' : 'text-lg'}`}>4.9</div>
+              </div>
+              <div className={`text-center ${isSheetMinimized ? '' : 'flex-1'}`}>
+                <div className={`text-gray-400 font-bold ${isSheetMinimized ? 'text-[10px]' : 'text-xs mb-1'}`}>الرحلات</div>
+                <div className={`font-bold text-black ${isSheetMinimized ? 'text-sm' : 'text-lg'}`}>12</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Edge Swipe Trigger Zone */}
       <div
