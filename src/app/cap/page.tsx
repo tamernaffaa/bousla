@@ -1874,11 +1874,7 @@ export default function CaptainApp() {
 
       {/* 🔝 TOP FLOATING BAR */}
       <div className="absolute top-0 left-0 right-0 p-4 z-20 flex justify-between items-start safe-area-top pointer-events-none">
-        {/* Earnings Pill (Left) */}
-        <div className="pointer-events-auto bg-black text-white px-5 py-2 rounded-full shadow-lg flex flex-col items-center min-w-[100px]">
-          <span className="text-xs text-gray-400 font-bold">اليوم</span>
-          <span className="text-xl font-bold font-mono">{(totalRewards + 15000).toLocaleString()} ل.س</span>
-        </div>
+
 
         {/* Status Badge (Center) - Only show if online */}
         {active && (
