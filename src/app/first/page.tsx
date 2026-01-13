@@ -415,27 +415,9 @@ export default function HomePage() {
           // Hide active trip view
           setShowActiveTripView(false);
 
-          // Prepare invoice data matching captain's format
-          const invoicePayload = {
-            trip_id: payload.payload.trip_id,
-            order_id: payload.payload.order_id,
-            total_cost: payload.payload.total_cost,
-            on_way_distance_km: trip.on_way_distance_km || 0,
-            on_way_duration_min: trip.on_way_duration_min || 0,
-            waiting_duration_min: trip.waiting_duration_min || 0,
-            trip_distance_km: trip.trip_distance_km || 0,
-            trip_duration_min: trip.trip_duration_min || 0,
-            base_cost: trip.base_cost || 0,
-            km_price: trip.km_price || 0,
-            min_price: trip.min_price || 0,
-            accepted_at: trip.accepted_at,
-            arrived_at: trip.arrived_at,
-            started_at: trip.started_at,
-            completed_at: payload.payload.completed_at || new Date().toISOString()
-          };
-
-          // Show invoice modal
-          setInvoiceData(invoicePayload);
+          // Use data directly from broadcast (sent by captain)
+          console.log('tamer tamer 📋 Setting invoice data:', payload.payload);
+          setInvoiceData(payload.payload);
           setShowInvoice(true);
 
           playNotificationSound('تم الوصول! 🎉', 'الرحلة انتهت، يرجى دفع المبلغ المستحق.');
