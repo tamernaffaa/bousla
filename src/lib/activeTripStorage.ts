@@ -503,10 +503,10 @@ class ActiveTripStorage {
                 started_at: trip.started_at,
                 completed_at: trip.completed_at,
                 on_way_distance_km: trip.on_way_distance_km,
-                on_way_duration_min: trip.on_way_duration_min,
-                waiting_duration_min: trip.waiting_duration_min,
+                on_way_duration_min: Math.round(trip.on_way_duration_min),  // ✅ Convert to integer
+                waiting_duration_min: Math.round(trip.waiting_duration_min),  // ✅ Convert to integer
                 trip_distance_km: trip.trip_distance_km,
-                trip_duration_min: trip.trip_duration_min,
+                trip_duration_min: Math.round(trip.trip_duration_min),  // ✅ Convert to integer
                 base_cost: trip.base_cost,
                 km_price: trip.km_price,
                 min_price: trip.min_price,
