@@ -165,7 +165,7 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
                         </div>
                         <div className="flex items-center gap-3">
                             <p className="text-lg font-bold text-gray-800">
-                                {tripData.total_cost?.toLocaleString()} ل.س
+                                {Math.round(tripData.total_cost || 0).toLocaleString()} ل.س
                             </p>
                             <FaChevronUp className="text-gray-400" />
                         </div>
@@ -214,7 +214,7 @@ export default function ActiveTripModal({ isOpen, onClose }: ActiveTripModalProp
                                 <div className="bg-green-50 p-3 rounded-xl text-center">
                                     <FaDollarSign className="mx-auto text-green-600 mb-1" />
                                     <p className="text-lg font-bold text-gray-800">
-                                        {(tripData.total_cost || 0).toLocaleString()}
+                                        {Math.round(tripData.total_cost || 0).toLocaleString()}
                                     </p>
                                     <p className="text-xs text-gray-500">ل.س</p>
                                 </div>

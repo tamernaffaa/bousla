@@ -71,7 +71,7 @@ export default function TripInvoiceModal({ isOpen, invoiceData, onClose }: TripI
                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4 text-center">
                         <p className="text-gray-600 text-sm mb-1">المبلغ الإجمالي</p>
                         <p className="text-4xl font-bold text-green-600">
-                            {invoiceData.total_cost.toLocaleString('ar-SY')} ل.س
+                            {Math.round(invoiceData.total_cost).toLocaleString('ar-SY')} ل.س
                         </p>
                     </div>
 
