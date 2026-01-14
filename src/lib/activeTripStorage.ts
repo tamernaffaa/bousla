@@ -492,7 +492,7 @@ class ActiveTripStorage {
             console.log(`💰 Total Cost: ${trip.total_cost}`);
 
             const dataToSync = {
-                trip_id: trip.trip_id,
+                id: trip.trip_id,  // ✅ Use 'id' column name for active_trips table
                 order_id: trip.order_id,
                 // Only include captain_id and customer_id if they exist (don't overwrite with null)
                 ...(trip.captain_id && { captain_id: trip.captain_id }),
