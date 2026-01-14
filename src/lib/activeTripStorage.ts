@@ -522,11 +522,20 @@ class ActiveTripStorage {
             console.log('tamer tamer 📤 Sending to active_trips:', JSON.stringify(dataToSync, null, 2));
 
             // Upsert to active_trips table
-            const { error } = await supabase
+            console.log('🔄 Executing upsert...');
+            const { data, error } = await supabase
                 .from('active_trips')
-                .upsert(dataToSync);
+                .upsert(dataToSync)
+                .select();
 
-            if (error) throw error;
+            console.log('📥 Upsert response:', { data, error });
+
+            if (error) {
+                console.error('❌ Upsert error detected:', error);
+                throw error;
+            }
+
+            console.log('✅ Upsert completed successfully');
 
             // Mark as synced
             this.updateTrip({
