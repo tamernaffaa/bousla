@@ -540,6 +540,11 @@ class ActiveTripStorage {
 
         } catch (error) {
             console.error(`❌ Sync failed for trip ${tripId}:`, error);
+            console.error('📋 Error details:', JSON.stringify(error, null, 2));
+            if (error instanceof Error) {
+                console.error('📝 Error message:', error.message);
+                console.error('📚 Error stack:', error.stack);
+            }
             this.updateTrip({ sync_status: 'failed' });
             return false;
         }
