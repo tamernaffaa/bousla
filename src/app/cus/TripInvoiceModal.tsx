@@ -144,7 +144,7 @@ export default function CustomerTripInvoiceModal({ isOpen, tripData, onComplete,
                                 {/* On Way */}
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-gray-600">مسافة الذهاب للزبون</span>
-                                    <span className="font-semibold">{(fullTripData.on_way_distance_km || 0).toFixed(2)} كم</span>
+                                    <span className="font-semibold">{(fullTripData.on_way_distance_km || 0).toFixed(1)} كم</span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-gray-600">مدة الذهاب</span>
@@ -164,7 +164,7 @@ export default function CustomerTripInvoiceModal({ isOpen, tripData, onComplete,
                                 {/* Trip */}
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-gray-600">مسافة الرحلة</span>
-                                    <span className="font-semibold text-blue-600">{(fullTripData.trip_distance_km || 0).toFixed(2)} كم</span>
+                                    <span className="font-semibold text-blue-600">{(fullTripData.trip_distance_km || 0).toFixed(1)} كم</span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-gray-600">مدة الرحلة</span>
