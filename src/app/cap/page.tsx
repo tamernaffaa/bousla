@@ -70,7 +70,7 @@ export default function CaptainApp() {
   const [showProfile, setShowProfile] = useState(false);
   const [showPayments, setShowPayments] = useState(false);
   const [showServices, setShowServices] = useState(false);
-  const [showLastOrders, setShowLastOrders] = useState(false);
+
   const [userRate, setUserRate] = useState(0);
   const [pokeCount, setPokeCount] = useState(0);
   const [routePoints, setRoutePoints] = useState<Position[]>([]);
@@ -189,10 +189,16 @@ export default function CaptainApp() {
 
       if (captainId) {
         // حساب إجمالي المكافآت المكتسبة
-        const { data: usage } = await supabase
+        const { data: usage, error } = await supabase
           .from('promotion_usage')
           .select('discount_amount')
-          .eq('captain_id', captainId);
+          .eq('user_id', captainId);  // ✅ تصحيح: user_id بدلاً من captain_id
+
+        if (error) {
+          console.error('❌ Error fetching promotion usage:', error);
+          setTotalRewards(0);
+          return;
+        }
 
         const total = usage?.reduce((sum, u) => sum + u.discount_amount, 0) || 0;
         setTotalRewards(total);
@@ -217,7 +223,9 @@ export default function CaptainApp() {
   // استقبال بيانات الكابتن
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      console.log('🌐 Current URL:', window.location.href);
       const urlParams = new URLSearchParams(window.location.search);
+      console.log('📋 URL Search Params:', window.location.search);
 
       const id = urlParams.get('id');
       const name = urlParams.get('name');
@@ -225,8 +233,14 @@ export default function CaptainApp() {
       const photo = urlParams.get('photo');
       const activeParam = urlParams.get('active');
 
+      console.log('📦 Extracted params:', { id, name, phone, activeParam });
+
       if (id) {
-        setCaptainId(Number(id));
+        const parsedId = Number(id);
+        console.log('🆔 Setting captainId from URL:', parsedId);
+        setCaptainId(parsedId);
+      } else {
+        console.warn('⚠️ No captain ID found in URL parameters');
       }
 
       // تحويل قيمة active من سلسلة نصية إلى boolean
@@ -391,15 +405,7 @@ export default function CaptainApp() {
     ).sort().reverse();
   }, [payments]);
 
-  const fetchLastOrders = useCallback(async () => {
-    console.log('tamer tamer Fetching last orders for captain:', captainId);
-    try {
-      const lastOrders = await ordersApi.getLastOrders(captainId);
-      setLastorder(lastOrders);
-    } catch (error) {
-      console.error('Error fetching last orders:', error);
-    }
-  }, [captainId]);
+
 
   // Effects
   useEffect(() => {
@@ -416,11 +422,6 @@ export default function CaptainApp() {
 
         // تحديث حالة أن القوائم قد تم تحميلها
         setMenusLoaded(true);
-
-        // ثم تحميل البيانات
-        fetchInitialData();
-        fetchPayments();
-        fetchLastOrders();
       } catch (error) {
         console.error('Error loading menus:', error);
       }
@@ -801,6 +802,16 @@ export default function CaptainApp() {
     }
   }, [captainId]);
 
+  const fetchLastOrders = useCallback(async () => {
+    console.log('tamer tamer Fetching last orders for captain:', captainId);
+    try {
+      const lastOrders = await ordersApi.getLastOrders(captainId);
+      setLastorder(lastOrders);
+    } catch (error) {
+      console.error('Error fetching last orders:', error);
+    }
+  }, [captainId]);
+
   const handleRefreshLastOrders = useCallback(async () => {
     setIsRefreshingLastOrders(true);
     try {
@@ -812,6 +823,9 @@ export default function CaptainApp() {
     }
   }, [fetchLastOrders]);
 
+
+
+
   const handleRefreshServices = useCallback(async () => {
     setIsRefreshingServices(true);
     try {
@@ -822,6 +836,21 @@ export default function CaptainApp() {
       setIsRefreshingServices(false);
     }
   }, [fetchInitialData]);
+
+  // جلب البيانات بعد تحديد captainId من URL
+  useEffect(() => {
+    console.log('📊 Data fetch useEffect triggered:', { captainId, menusLoaded });
+
+    if (captainId > 0 && menusLoaded) {
+      console.log('✅ Conditions met! Fetching data for captain:', captainId);
+      fetchInitialData();
+      fetchPayments();
+      fetchLastOrders();
+    } else {
+      console.log('⏳ Waiting... captainId:', captainId, 'menusLoaded:', menusLoaded);
+    }
+  }, [captainId, menusLoaded, fetchInitialData, fetchPayments, fetchLastOrders]);
+
 
   const handleActivate = useCallback(() => {
     const newActiveState = !active;
@@ -1808,8 +1837,13 @@ export default function CaptainApp() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setPasswordError('كلمة المرور يجب أن تكون على الأقل 6 أحرف');
+    if (newPassword.length < 8) {
+      setPasswordError('كلمة المرور يجب أن تكون على الأقل 8 أحرف');
+      return;
+    }
+
+    if (!/[a-zA-Z]/.test(newPassword)) {
+      setPasswordError('كلمة المرور يجب أن تحتوي على حرف واحد على الأقل');
       return;
     }
 
@@ -2048,7 +2082,6 @@ export default function CaptainApp() {
           isRefreshingLastOrders={isRefreshingLastOrders}
           onRefreshLastOrders={handleRefreshLastOrders}
           onOrderClick={(id) => { openOrderDetails(id); setShowProfile(false); }}
-          onvertioal_order={() => { openOrderDetails(1); setShowProfile(false); }}
           onlogout_btn={() => sendToKotlin("logout", "")}
           onShowChangePassword={() => { setShowChangePassword(true); setShowProfile(false); }}
           onShowRejectedOrders={() => { setShowRejectedOrders(true); setShowProfile(false); }}

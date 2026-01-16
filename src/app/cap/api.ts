@@ -305,12 +305,47 @@ export const servicesApi = {
     try {
       const { data, error } = await supabase
         .from('cap_ser')
-        .select('*')
+        .select(`
+          id,
+          cap_id,
+          active,
+          note,
+          created_at,
+          updated_at,
+          ser_chi:ser_id (
+            id,
+            name1,
+            f_km,
+            km,
+            m_cost,
+            add_cost,
+            dis_cost,
+            photo1
+          )
+        `)
         .eq('cap_id', capId)
         .order('ser_id', { ascending: true })
 
       if (error) throw error
-      return data || []
+
+      // تحويل البيانات إلى الشكل المطلوب
+      const services: Service[] = (data || []).map((item: any) => ({
+        id: item.id,
+        cap_id: item.cap_id,
+        ser_id: item.ser_chi?.id || 0,
+        name1: item.ser_chi?.name1 || '',
+        f_km: item.ser_chi?.f_km || '0',
+        km: item.ser_chi?.km || '0',
+        m_cost: item.ser_chi?.m_cost || '0',
+        add_cost: item.ser_chi?.add_cost || '0',
+        dis_cost: item.ser_chi?.dis_cost || '0',
+        photo1: item.ser_chi?.photo1 || '',
+        active: item.active ?? true,
+        created_at: item.created_at || '',
+        updated_at: item.updated_at || ''
+      }))
+
+      return services
     } catch (error) {
       console.error('Error fetching captain services:', error)
       return []
@@ -425,18 +460,28 @@ export const captainApi = {
     newPassword: string
   ): Promise<ApiResponse> => {
     try {
-      // هنا يمكنك إضافة منطق التحقق من كلمة المرور الحالية وتحديثها
-      // هذا يعتمد على كيفية تخزين كلمات المرور في قاعدة البيانات
+      // 1. التحقق من كلمة المرور الحالية
+      const { data: user, error: fetchError } = await supabase
+        .from('users')
+        .select('pass')
+        .eq('id', capId)
+        .single()
 
-      const { error } = await supabase
+      if (fetchError) throw fetchError
+      if (!user || user.pass !== currentPassword) {
+        throw new Error('كلمة المرور الحالية غير صحيحة')
+      }
+
+      // 2. تحديث كلمة المرور الجديدة
+      const { error: updateError } = await supabase
         .from('users')
         .update({
-          password: newPassword, // تأكد من تشفير كلمة المرور
+          pass: newPassword,
           updated_at: new Date().toISOString()
         })
         .eq('id', capId)
 
-      if (error) throw error
+      if (updateError) throw updateError
 
       return {
         success: true,

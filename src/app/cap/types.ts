@@ -69,6 +69,7 @@ export interface Service {
   dis_cost: string;
   photo1: string;
   active: boolean;
+  note?: string;
   created_at: string;
   updated_at: string;
 }

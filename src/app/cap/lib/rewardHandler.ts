@@ -125,10 +125,9 @@ export const checkAndApplyRewards = async (
                             .from('promotion_usage')
                             .insert([{
                                 promotion_id: promo.id,
-                                user_id: null, // هذا كابتن، ليس مستخدم
-                                captain_id: captainId,
+                                user_id: captainId, // ✅ تصحيح: user_id يُستخدم للكابتن أيضاً
                                 order_id: order.id,
-                                discount_amount: rewardAmount, // هنا نستخدم الحقل لتخزين قيمة المكافأة
+                                discount_amount: rewardAmount,
                                 created_at: new Date().toISOString()
                             }])
 

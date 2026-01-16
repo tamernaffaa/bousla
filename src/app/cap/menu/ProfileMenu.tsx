@@ -34,7 +34,7 @@ interface ProfileMenuProps {
   onRefreshLastOrders: () => void;
   onOrderClick: (orderId: number) => void;
   // Actions
-  onvertioal_order: () => void;
+
   onlogout_btn: () => void;
   onShowChangePassword: () => void;
   onShowRejectedOrders?: () => void;
@@ -50,13 +50,21 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   payments, availableMonths, filterMonth, isRefreshingPayments, onRefreshPayments, onFilterMonth,
   rewards, totalRewards, isRefreshingRewards, onRefreshRewards,
   lastOrders, isRefreshingLastOrders, onRefreshLastOrders, onOrderClick,
-  onvertioal_order,
+
   onlogout_btn,
   onShowChangePassword,
   onShowRejectedOrders,
   rejectedOrdersCount = 0
 }) => {
   const [currentView, setCurrentView] = useState<MenuView>('main');
+
+  // History filter state
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'today' | 'week' | 'month' | 'custom'>('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+
+  // Logout Confirmation State
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Swipe Close Logic
   const [touchStart, setTouchStart] = React.useState<number | null>(null);
@@ -332,30 +340,125 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
     </div>
   );
 
-  const renderHistory = () => (
-    <div className="space-y-3">
-      {lastOrders.length > 0 ? lastOrders.map(order => (
-        <div key={order.id} onClick={() => onOrderClick(order.id)} className="group bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-black cursor-pointer transition-all">
-          <div className="flex justify-between items-center mb-3">
-            <span className="px-2 py-1 bg-gray-100 rounded text-xs font-bold text-gray-500">#{order.id}</span>
-            <span className="font-mono font-bold text-lg">{order.real_price} ل.س</span>
-          </div>
-          <div className="space-y-2 relative border-r-2 border-dashed border-gray-200 pr-4 mr-1">
-            <div className="absolute -right-[5px] top-1 w-2 h-2 bg-black rounded-full ring-2 ring-white"></div>
-            <p className="font-bold text-sm text-gray-800">{extractMunicipality(order.start_text)}</p>
+  const renderHistory = () => {
+    // Filter orders based on selected filter
+    const getFilteredOrders = () => {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-            <div className="absolute -right-[5px] bottom-1 w-2 h-2 bg-yellow-400 rounded-full ring-2 ring-white"></div>
-            <p className="font-bold text-sm text-gray-600">{extractMunicipality(order.end_text)}</p>
+      return lastOrders.filter(order => {
+        const orderDate = new Date(order.start_time || order.accept_time || order.end_time);
+
+        switch (historyFilter) {
+          case 'today':
+            return orderDate >= today;
+          case 'week':
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return orderDate >= weekAgo;
+          case 'month':
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            return orderDate >= monthStart;
+          case 'custom':
+            if (!customStartDate || !customEndDate) return true;
+            const start = new Date(customStartDate);
+            const end = new Date(customEndDate);
+            end.setHours(23, 59, 59);
+            return orderDate >= start && orderDate <= end;
+          default:
+            return true;
+        }
+      });
+    };
+
+    const filteredOrders = getFilteredOrders();
+
+    // Calculate statistics
+    const totalOrders = filteredOrders.length;
+    const totalProfits = filteredOrders.reduce((sum, order) => sum + parseFloat(order.real_price || '0'), 0);
+    const formatNumber = (num: number) => new Intl.NumberFormat('ar-SA', { maximumFractionDigits: 0 }).format(num);
+
+    return (
+      <div className="space-y-4">
+        {/* Filter Buttons */}
+        <div className="mb-4 flex overflow-x-auto pb-2 space-x-2 rtl:space-x-reverse no-scrollbar items-center">
+          <span className="text-xs font-bold text-gray-400 ml-2">الفترة:</span>
+          <button onClick={() => setHistoryFilter('all')} className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${historyFilter === 'all' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>الكل</button>
+          <button onClick={() => setHistoryFilter('today')} className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${historyFilter === 'today' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>اليوم</button>
+          <button onClick={() => setHistoryFilter('week')} className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${historyFilter === 'week' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>أسبوع</button>
+          <button onClick={() => setHistoryFilter('month')} className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${historyFilter === 'month' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>شهر</button>
+          <button onClick={() => setHistoryFilter('custom')} className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${historyFilter === 'custom' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>مخصص</button>
+        </div>
+
+        {/* Custom Date Range */}
+        {historyFilter === 'custom' && (
+          <div className="bg-gray-50 p-4 rounded-xl mb-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-gray-600 mb-1 block">من تاريخ</label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-600 mb-1 block">إلى تاريخ</label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                />
+              </div>
+            </div>
           </div>
-          <div className="flex justify-end mt-3 pt-3 border-t border-gray-50">
-            <span className="text-xs font-bold text-gray-400 flex items-center gap-1 group-hover:text-black transition-colors">
-              التفاصيل <FaChevronRight className="text-[10px]" />
-            </span>
+        )}
+
+        {/* Statistics Card */}
+        <div className="bg-black text-white p-5 rounded-2xl shadow-lg mb-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-yellow-400 text-xs font-bold mb-1">عدد الطلبات</p>
+              <h3 className="text-2xl font-mono font-bold">{totalOrders}</h3>
+            </div>
+            <div>
+              <p className="text-yellow-400 text-xs font-bold mb-1">إجمالي الأرباح</p>
+              <h3 className="text-2xl font-mono font-bold">{formatNumber(totalProfits)} <span className="text-sm font-sans">ل.س</span></h3>
+            </div>
           </div>
         </div>
-      )) : <div className="text-center py-12 text-gray-400">لا توجد طلبات سابقة</div>}
-    </div>
-  );
+
+        {/* Orders List */}
+        <div className="space-y-3">
+          {filteredOrders.length > 0 ? filteredOrders.map(order => (
+            <div key={order.id} onClick={() => onOrderClick(order.id)} className="group bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-black cursor-pointer transition-all">
+              <div className="flex justify-between items-center mb-3">
+                <span className="px-2 py-1 bg-gray-100 rounded text-xs font-bold text-gray-500">#{order.id}</span>
+                <span className="font-mono font-bold text-lg">{order.real_price} ل.س</span>
+              </div>
+              <div className="space-y-2 relative border-r-2 border-dashed border-gray-200 pr-4 mr-1">
+                <div className="absolute -right-[5px] top-1 w-2 h-2 bg-black rounded-full ring-2 ring-white"></div>
+                <p className="font-bold text-sm text-gray-800">{extractMunicipality(order.start_text)}</p>
+
+                <div className="absolute -right-[5px] bottom-1 w-2 h-2 bg-yellow-400 rounded-full ring-2 ring-white"></div>
+                <p className="font-bold text-sm text-gray-600">{extractMunicipality(order.end_text)}</p>
+              </div>
+              <div className="flex justify-end mt-3 pt-3 border-t border-gray-50">
+                <span className="text-xs font-bold text-gray-400 flex items-center gap-1 group-hover:text-black transition-colors">
+                  التفاصيل <FaChevronRight className="text-[10px]" />
+                </span>
+              </div>
+            </div>
+          )) : <div className="text-center py-12 text-gray-400">لا توجد طلبات سابقة</div>}
+        </div>
+      </div>
+    );
+  };
+
+
+
 
   const getHeaderTitle = () => {
     switch (currentView) {
@@ -444,6 +547,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
                 <MenuButton icon={<FaCreditCard />} label="المحفظة" onClick={() => setCurrentView('payments')} />
                 <Divider />
                 <MenuButton icon={<FaHistory />} label="سجل الرحلات" onClick={() => setCurrentView('history')} />
+
                 <Divider />
                 <MenuButton
                   icon={<span className="text-yellow-500">⭐</span>}
@@ -457,8 +561,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-4">
                 <MenuButton icon={<FaGift className="text-yellow-500" />} label="المكافآت والعروض" onClick={() => setCurrentView('rewards')} extra={<span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">جديد</span>} />
-                <Divider />
-                <MenuButton icon={<FaList />} label="طلب افتراضي" onClick={onvertioal_order} />
+
                 {onShowRejectedOrders && (
                   <>
                     <Divider />
@@ -479,7 +582,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-4">
                 <MenuButton icon={<FaLock />} label="تغيير كلمة المرور" onClick={onShowChangePassword} />
                 <Divider />
-                <MenuButton icon={<FaSignOutAlt className="text-red-500" />} label="تسجيل الخروج" onClick={onlogout_btn} isDestructive />
+                <MenuButton icon={<FaSignOutAlt className="text-red-500" />} label="تسجيل الخروج" onClick={() => setShowLogoutConfirm(true)} isDestructive />
               </div>
 
               <div className="text-center mt-8 pb-8">
@@ -498,8 +601,44 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
             </div>
           )}
         </div>
+
+        {/* Logout Confirmation Modal */}
+        {showLogoutConfirm && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl scale-100 animate-scale-up">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                  <FaSignOutAlt className="text-3xl text-red-500 ml-1" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">تسجيل الخروج</h3>
+                <p className="text-gray-500 mb-6">
+                  هل أنت متأكد من رغبتك في تسجيل الخروج من التطبيق؟
+                </p>
+
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={() => setShowLogoutConfirm(false)}
+                    className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowLogoutConfirm(false);
+                      onlogout_btn();
+                    }}
+                    className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-colors shadow-lg shadow-red-200"
+                  >
+                    نعم، خروج
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
-    </div>
+    </div >
   );
 };
 
